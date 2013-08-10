@@ -108,7 +108,6 @@ module Data.Vector.Hybrid
   , foldM, foldM', fold1M, fold1M'
   , foldM_, foldM'_, fold1M_, fold1M'_
 
-{-
   -- * Prefix sums (scans)
   , prescanl, prescanl'
   , postscanl, postscanl'
@@ -118,7 +117,6 @@ module Data.Vector.Hybrid
   , scanr, scanr', scanr1, scanr1'
 
   -- * Conversions
--}
 
   -- ** Lists
   , toList, fromList, fromListN
@@ -374,7 +372,7 @@ iterateN = G.iterateN
 --
 -- > unfoldr (\n -> if n == 0 then Nothing else Just (n,n-1)) 10
 -- >  = <10,9,8,7,6,5,4,3,2,1>
-unfoldr :: (G.Vector u a, G.Vector v b) => (c -> Maybe ((a,b), c)) -> c -> Vector u v (a, b)
+unfoldr :: (G.Vector u a, G.Vector v b) => (c -> Maybe ((a, b), c)) -> c -> Vector u v (a, b)
 unfoldr = G.unfoldr
 {-# INLINE unfoldr #-}
 
@@ -700,14 +698,14 @@ izipWith6 = G.izipWith6
 -- | /O(min(m,n))/ Zip the two vectors with the monadic action and yield a
 -- vector of results
 zipWithM :: (Monad m, G.Vector u a, G.Vector v b, G.Vector u c, G.Vector v d, G.Vector u e, G.Vector v f)
-         => ((a,b) -> (c,d) -> m (e,f)) -> Vector u v (a, b) -> Vector u v (c,d) -> m (Vector u v (e,f))
+         => ((a, b) -> (c, d) -> m (e,f)) -> Vector u v (a, b) -> Vector u v (c, d) -> m (Vector u v (e,f))
 zipWithM = G.zipWithM
 {-# INLINE zipWithM #-}
 
 -- | /O(min(m,n))/ Zip the two vectors with the monadic action and ignore the
 -- results
 zipWithM_ :: (Monad m, G.Vector u a, G.Vector v b, G.Vector u c, G.Vector v d)
-          => ((a,b) -> (c,d) -> m e) -> Vector u v (a, b) -> Vector u v (c, d) -> m ()
+          => ((a, b) -> (c, d) -> m e) -> Vector u v (a, b) -> Vector u v (c, d) -> m ()
 zipWithM_ = G.zipWithM_
 {-# INLINE zipWithM_ #-}
 
@@ -1006,7 +1004,6 @@ fold1M'_ :: (Monad m, G.Vector u a, G.Vector v b) => ((a, b) -> (a, b) -> m (a, 
 {-# INLINE fold1M'_ #-}
 fold1M'_ = G.fold1M'_
 
-{-
 
 -- Prefix sums (scans)
 -- -------------------
@@ -1019,14 +1016,14 @@ fold1M'_ = G.fold1M'_
 --
 -- Example: @prescanl (+) 0 \<1,2,3,4\> = \<0,1,3,6\>@
 --
-prescanl :: ((G.Vector u a, G.Vector v b), Prim b) => (a -> b -> (a, b)) -> (a, b) -> Vector b -> Vector u v (a, b)
-{-# INLINE prescanl #-}
+prescanl :: (G.Vector u a, G.Vector v b, G.Vector u c, G.Vector v d) => ((a, b) -> (c, d) -> (a, b)) -> (a, b) -> Vector u v (c, d) -> Vector u v (a, b)
 prescanl = G.prescanl
+{-# INLINE prescanl #-}
 
 -- | /O(n)/ Prescan with strict accumulator
-prescanl' :: ((G.Vector u a, G.Vector v b), Prim b) => (a -> b -> (a, b)) -> (a, b) -> Vector b -> Vector u v (a, b)
-{-# INLINE prescanl' #-}
+prescanl' :: (G.Vector u a, G.Vector v b, G.Vector u c, G.Vector v d) => ((a, b) -> (c, d) -> (a, b)) -> (a, b) -> Vector u v (c, d) -> Vector u v (a, b)
 prescanl' = G.prescanl'
+{-# INLINE prescanl' #-}
 
 -- | /O(n)/ Scan
 --
@@ -1036,14 +1033,14 @@ prescanl' = G.prescanl'
 --
 -- Example: @postscanl (+) 0 \<1,2,3,4\> = \<1,3,6,10\>@
 --
-postscanl :: ((G.Vector u a, G.Vector v b), Prim b) => (a -> b -> (a, b)) -> (a, b) -> Vector b -> Vector u v (a, b)
-{-# INLINE postscanl #-}
+postscanl :: (G.Vector u a, G.Vector v b, G.Vector u c, G.Vector v d) => ((a, b) -> (c, d) -> (a, b)) -> (a, b) -> Vector u v (c, d) -> Vector u v (a, b)
 postscanl = G.postscanl
+{-# INLINE postscanl #-}
 
 -- | /O(n)/ Scan with strict accumulator
-postscanl' :: ((G.Vector u a, G.Vector v b), Prim b) => (a -> b -> (a, b)) -> (a, b) -> Vector b -> Vector u v (a, b)
-{-# INLINE postscanl' #-}
+postscanl' :: (G.Vector u a, G.Vector v b, G.Vector u c, G.Vector v d) => ((a, b) -> (c, d) -> (a, b)) -> (a, b) -> Vector u v (c, d) -> Vector u v (a, b)
 postscanl' = G.postscanl'
+{-# INLINE postscanl' #-}
 
 -- | /O(n)/ Haskell-style scan
 --
@@ -1053,14 +1050,14 @@ postscanl' = G.postscanl'
 --
 -- Example: @scanl (+) 0 \<1,2,3,4\> = \<0,1,3,6,10\>@
 --
-scanl :: ((G.Vector u a, G.Vector v b), Prim b) => (a -> b -> (a, b)) -> (a, b) -> Vector b -> Vector u v (a, b)
-{-# INLINE scanl #-}
+scanl :: (G.Vector u a, G.Vector v b, G.Vector u c, G.Vector v d) => ((a, b) -> (c, d) -> (a, b)) -> (a, b) -> Vector u v (c, d) -> Vector u v (a, b)
 scanl = G.scanl
+{-# INLINE scanl #-}
 
 -- | /O(n)/ Haskell-style scan with strict accumulator
-scanl' :: ((G.Vector u a, G.Vector v b), Prim b) => (a -> b -> (a, b)) -> (a, b) -> Vector b -> Vector u v (a, b)
-{-# INLINE scanl' #-}
+scanl' :: (G.Vector u a, G.Vector v b, G.Vector u c, G.Vector v d) => ((a, b) -> (c, d) -> (a, b)) -> (a, b) -> Vector u v (c, d) -> Vector u v (a, b)
 scanl' = G.scanl'
+{-# INLINE scanl' #-}
 
 -- | /O(n)/ Scan over a non-empty vector
 --
@@ -1068,14 +1065,14 @@ scanl' = G.scanl'
 -- >   where y1 = x1
 -- >         yi = f y(i-1) xi
 --
-scanl1 :: (G.Vector u a, G.Vector v b) => (a -> (a, b) -> (a, b)) -> Vector u v (a, b) -> Vector u v (a, b)
-{-# INLINE scanl1 #-}
+scanl1 :: (G.Vector u a, G.Vector v b) => ((a, b) -> (a, b) -> (a, b)) -> Vector u v (a, b) -> Vector u v (a, b)
 scanl1 = G.scanl1
+{-# INLINE scanl1 #-}
 
 -- | /O(n)/ Scan over a non-empty vector with a strict accumulator
-scanl1' :: (G.Vector u a, G.Vector v b) => (a -> (a, b) -> (a, b)) -> Vector u v (a, b) -> Vector u v (a, b)
-{-# INLINE scanl1' #-}
+scanl1' :: (G.Vector u a, G.Vector v b) => ((a, b) -> (a, b) -> (a, b)) -> Vector u v (a, b) -> Vector u v (a, b)
 scanl1' = G.scanl1'
+{-# INLINE scanl1' #-}
 
 -- | /O(n)/ Right-to-left prescan
 --
@@ -1083,47 +1080,46 @@ scanl1' = G.scanl1'
 -- prescanr f z = 'reverse' . 'prescanl' (flip f) z . 'reverse'
 -- @
 --
-prescanr :: ((G.Vector u a, G.Vector v b), Prim b) => (a -> b -> b) -> b -> Vector u v (a, b) -> Vector b
+prescanr :: (G.Vector u a, G.Vector v b, G.Vector u c, G.Vector v d) => ((a, b) -> (c, d) -> (c, d)) -> (c, d) -> Vector u v (a, b) -> Vector u v (c, d)
 {-# INLINE prescanr #-}
 prescanr = G.prescanr
 
 -- | /O(n)/ Right-to-left prescan with strict accumulator
-prescanr' :: ((G.Vector u a, G.Vector v b), Prim b) => (a -> b -> b) -> b -> Vector u v (a, b) -> Vector b
-{-# INLINE prescanr' #-}
+prescanr' :: (G.Vector u a, G.Vector v b, G.Vector u c, G.Vector v d) => ((a, b) -> (c, d) -> (c, d)) -> (c, d) -> Vector u v (a, b) -> Vector u v (c, d)
 prescanr' = G.prescanr'
+{-# INLINE prescanr' #-}
 
 -- | /O(n)/ Right-to-left scan
-postscanr :: ((G.Vector u a, G.Vector v b), Prim b) => (a -> b -> b) -> b -> Vector u v (a, b) -> Vector b
-{-# INLINE postscanr #-}
+postscanr :: (G.Vector u a, G.Vector v b, G.Vector u c, G.Vector v d) => ((a, b) -> (c, d) -> (c, d)) -> (c, d) -> Vector u v (a, b) -> Vector u v (c, d)
 postscanr = G.postscanr
+{-# INLINE postscanr #-}
 
 -- | /O(n)/ Right-to-left scan with strict accumulator
-postscanr' :: ((G.Vector u a, G.Vector v b), Prim b) => (a -> b -> b) -> b -> Vector u v (a, b) -> Vector b
-{-# INLINE postscanr' #-}
+postscanr' :: (G.Vector u a, G.Vector v b, G.Vector u c, G.Vector v d) => ((a, b) -> (c, d) -> (c, d)) -> (c, d) -> Vector u v (a, b) -> Vector u v (c, d)
 postscanr' = G.postscanr'
+{-# INLINE postscanr' #-}
 
 -- | /O(n)/ Right-to-left Haskell-style scan
-scanr :: ((G.Vector u a, G.Vector v b), Prim b) => (a -> b -> b) -> b -> Vector u v (a, b) -> Vector b
-{-# INLINE scanr #-}
+scanr :: (G.Vector u a, G.Vector v b, G.Vector u c, G.Vector v d) => ((a, b) -> (c, d) -> (c, d)) -> (c, d) -> Vector u v (a, b) -> Vector u v (c, d)
 scanr = G.scanr
+{-# INLINE scanr #-}
 
 -- | /O(n)/ Right-to-left Haskell-style scan with strict accumulator
-scanr' :: ((G.Vector u a, G.Vector v b), Prim b) => (a -> b -> b) -> b -> Vector u v (a, b) -> Vector b
-{-# INLINE scanr' #-}
+scanr' :: (G.Vector u a, G.Vector v b, G.Vector u c, G.Vector v d) => ((a, b) -> (c, d) -> (c, d)) -> (c, d) -> Vector u v (a, b) -> Vector u v (c, d)
 scanr' = G.scanr'
+{-# INLINE scanr' #-}
 
 -- | /O(n)/ Right-to-left scan over a non-empty vector
-scanr1 :: (G.Vector u a, G.Vector v b) => (a -> (a, b) -> (a, b)) -> Vector u v (a, b) -> Vector u v (a, b)
+scanr1 :: (G.Vector u a, G.Vector v b) => ((a, b) -> (a, b) -> (a, b)) -> Vector u v (a, b) -> Vector u v (a, b)
 {-# INLINE scanr1 #-}
 scanr1 = G.scanr1
 
 -- | /O(n)/ Right-to-left scan over a non-empty vector with a strict
 -- accumulator
-scanr1' :: (G.Vector u a, G.Vector v b) => (a -> (a, b) -> (a, b)) -> Vector u v (a, b) -> Vector u v (a, b)
+scanr1' :: (G.Vector u a, G.Vector v b) => ((a, b) -> (a, b) -> (a, b)) -> Vector u v (a, b) -> Vector u v (a, b)
 {-# INLINE scanr1' #-}
 scanr1' = G.scanr1'
 
--}
 -- Conversions - Lists
 -- ------------------------
 
