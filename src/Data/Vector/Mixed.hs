@@ -95,13 +95,13 @@ module Data.Vector.Mixed
   , filter, ifilter, filterM
   , takeWhile, dropWhile
 
-{-
   -- ** Partitioning
   , partition, unstablePartition, span, break
 
   -- ** Searching
   , elem, notElem, find, findIndex, findIndices, elemIndex, elemIndices
 
+{-
   -- * Folding
   , foldl, foldl1, foldl', foldl1', foldr, foldr1, foldr', foldr1'
   , ifoldl, ifoldl', ifoldr, ifoldr'
@@ -771,7 +771,7 @@ indexed m = mix (G.indexed m)
 
 -- | /O(n)/ Map a function over a vector
 map :: G.Vector v a => (a -> b) -> v a -> Vector b
-map f = box . G.unstream . Stream.inplace (MStream.map f) . G.stream
+map f = boxed . G.unstream . Stream.inplace (MStream.map f) . G.stream
 
 
 {-# INLINE map #-}
@@ -779,7 +779,7 @@ map f = box . G.unstream . Stream.inplace (MStream.map f) . G.stream
 -- | /O(n)/ Apply a function to every element of a vector and its index
 imap :: G.Vector v a => (Int -> a -> b) -> v a -> Vector b
 -- imap f m = mix (G.imap f m)
-imap f = box . G.unstream . Stream.inplace (MStream.map (uncurry f) . MStream.indexed) . G.stream
+imap f = boxed . G.unstream . Stream.inplace (MStream.map (uncurry f) . MStream.indexed) . G.stream
 {-# INLINE imap #-}
 
 -- | Map a function over a vector and concatenate the results.
@@ -820,28 +820,28 @@ forM_ as f = mapM_ f as
 -- | /O(min(m,n))/ Zip two vectors with the given function.
 zipWith :: (G.Vector va a, G.Vector vb b)
         => (a -> b -> c) -> va a -> vb b -> Vector c
-zipWith k a b = box (G.unstream (Stream.zipWith k (G.stream a) (G.stream b)))
+zipWith k a b = boxed (G.unstream (Stream.zipWith k (G.stream a) (G.stream b)))
 {-# INLINE zipWith #-}
 
 -- | Zip three vectors with the given function.
 zipWith3 :: (G.Vector va a, G.Vector vb b, G.Vector vc c)
          => (a -> b -> c -> d) -> va a -> vb b -> vc c -> Vector d
-zipWith3 k a b c = box (G.unstream (Stream.zipWith3 k (G.stream a) (G.stream b) (G.stream c)))
+zipWith3 k a b c = boxed (G.unstream (Stream.zipWith3 k (G.stream a) (G.stream b) (G.stream c)))
 {-# INLINE zipWith3 #-}
 
 zipWith4 :: (G.Vector va a, G.Vector vb b, G.Vector vc c, G.Vector vd d)
          => (a -> b -> c -> d -> e) -> va a -> vb b -> vc c -> vd d -> Vector e
-zipWith4 k a b c d = box (G.unstream (Stream.zipWith4 k (G.stream a) (G.stream b) (G.stream c) (G.stream d)))
+zipWith4 k a b c d = boxed (G.unstream (Stream.zipWith4 k (G.stream a) (G.stream b) (G.stream c) (G.stream d)))
 {-# INLINE zipWith4 #-}
 
 zipWith5 :: (G.Vector va a, G.Vector vb b, G.Vector vc c, G.Vector vd d, G.Vector ve e)
          => (a -> b -> c -> d -> e -> f) -> va a -> vb b -> vc c -> vd d -> ve e -> Vector f
-zipWith5 k a b c d e = box (G.unstream (Stream.zipWith5 k (G.stream a) (G.stream b) (G.stream c) (G.stream d) (G.stream e)))
+zipWith5 k a b c d e = boxed (G.unstream (Stream.zipWith5 k (G.stream a) (G.stream b) (G.stream c) (G.stream d) (G.stream e)))
 {-# INLINE zipWith5 #-}
 
 zipWith6 :: (G.Vector va a, G.Vector vb b, G.Vector vc c, G.Vector vd d, G.Vector ve e, G.Vector vf f)
          => (a -> b -> c -> d -> e -> f -> g) -> va a -> vb b -> vc c -> vd d -> ve e -> vf f -> Vector g
-zipWith6 k a b c d e f = box (G.unstream (Stream.zipWith6 k (G.stream a) (G.stream b) (G.stream c) (G.stream d) (G.stream e) (G.stream f)))
+zipWith6 k a b c d e f = boxed (G.unstream (Stream.zipWith6 k (G.stream a) (G.stream b) (G.stream c) (G.stream d) (G.stream e) (G.stream f)))
 {-# INLINE zipWith6 #-}
 
 
@@ -850,7 +850,7 @@ zipWith6 k a b c d e f = box (G.unstream (Stream.zipWith6 k (G.stream a) (G.stre
 
 izipWith :: (G.Vector va a, G.Vector vb b)
         => (Int -> a -> b -> c) -> va a -> vb b -> Vector c
-izipWith f xs ys = box $ G.unstream $
+izipWith f xs ys = boxed $ G.unstream $
    Stream.zipWith (uncurry f) (Stream.indexed (G.stream xs)) (G.stream ys)
 
 {-# INLINE izipWith #-}
@@ -858,24 +858,24 @@ izipWith f xs ys = box $ G.unstream $
 -- | Zip three vectors and their indices with the given function.
 izipWith3 :: (G.Vector va a, G.Vector vb b, G.Vector vc c)
          => (Int -> a -> b -> c -> d) -> va a -> vb b -> vc c -> Vector d
-izipWith3 f xs ys zs = box $ G.unstream $
+izipWith3 f xs ys zs = boxed $ G.unstream $
    Stream.zipWith3 (uncurry f) (Stream.indexed (G.stream xs)) (G.stream ys) (G.stream zs)
 {-# INLINE izipWith3 #-}
 
 izipWith4 :: (G.Vector va a, G.Vector vb b, G.Vector vc c, G.Vector vd d)
          => (Int -> a -> b -> c -> d -> e) -> va a -> vb b -> vc c -> vd d -> Vector e
-izipWith4 f xs ys zs ws = box $ G.unstream $
+izipWith4 f xs ys zs ws = boxed $ G.unstream $
    Stream.zipWith4 (uncurry f) (Stream.indexed (G.stream xs)) (G.stream ys) (G.stream zs) (G.stream ws)
 {-# INLINE izipWith4 #-}
 
 izipWith5 :: (G.Vector va a, G.Vector vb b, G.Vector vc c, G.Vector vd d, G.Vector ve e)
          => (Int -> a -> b -> c -> d -> e -> f) -> va a -> vb b -> vc c -> vd d -> ve e -> Vector f
-izipWith5 k a b c d e = box (G.unstream (Stream.zipWith5 (uncurry k) (Stream.indexed (G.stream a)) (G.stream b) (G.stream c) (G.stream d) (G.stream e)))
+izipWith5 k a b c d e = boxed (G.unstream (Stream.zipWith5 (uncurry k) (Stream.indexed (G.stream a)) (G.stream b) (G.stream c) (G.stream d) (G.stream e)))
 {-# INLINE izipWith5 #-}
 
 izipWith6 :: (G.Vector va a, G.Vector vb b, G.Vector vc c, G.Vector vd d, G.Vector ve e, G.Vector vf f)
          => (Int -> a -> b -> c -> d -> e -> f -> g) -> va a -> vb b -> vc c -> vd d -> ve e -> vf f -> Vector g
-izipWith6 k a b c d e f = box (G.unstream (Stream.zipWith6 (uncurry k) (Stream.indexed (G.stream a)) (G.stream b) (G.stream c) (G.stream d) (G.stream e) (G.stream f)))
+izipWith6 k a b c d e f = boxed (G.unstream (Stream.zipWith6 (uncurry k) (Stream.indexed (G.stream a)) (G.stream b) (G.stream c) (G.stream d) (G.stream e) (G.stream f)))
 {-# INLINE izipWith6 #-}
 
 -- | Elementwise pairing of array elements.
@@ -991,7 +991,6 @@ dropWhile :: Mixed u v a => (a -> Bool) -> v a -> Vector a
 dropWhile f = mix . G.dropWhile f
 {-# INLINE dropWhile #-}
 
-{-
 -- Parititioning
 -- -------------
 
@@ -999,75 +998,83 @@ dropWhile f = mix . G.dropWhile f
 -- elements that satisfy the predicate and the second one those that don't. The
 -- relative order of the elements is preserved at the cost of a sometimes
 -- reduced performance compared to 'unstablePartition'.
-partition :: (a -> Bool) -> Vector a -> (Vector a, Vector a)
+partition :: Mixed u v a => (a -> Bool) -> v a -> (Vector a, Vector a)
+partition f as = case G.partition f as of
+  (l,r) -> (mix l, mix r)
 {-# INLINE partition #-}
-partition = G.partition
 
 -- | /O(n)/ Split the vector in two parts, the first one containing those
 -- elements that satisfy the predicate and the second one those that don't.
 -- The order of the elements is not preserved but the operation is often
 -- faster than 'partition'.
-unstablePartition :: (a -> Bool) -> Vector a -> (Vector a, Vector a)
+unstablePartition :: Mixed u v a => (a -> Bool) -> v a -> (Vector a, Vector a)
+unstablePartition f as = case G.unstablePartition f as of
+  (l,r) -> (mix l, mix r)
 {-# INLINE unstablePartition #-}
-unstablePartition = G.unstablePartition
 
 -- | /O(n)/ Split the vector into the longest prefix of elements that satisfy
 -- the predicate and the rest without copying.
-span :: (a -> Bool) -> Vector a -> (Vector a, Vector a)
+span :: Mixed u v a => (a -> Bool) -> v a -> (Vector a, Vector a)
+span f as = case G.span f as of
+  (l,r) -> (mix l, mix r)
 {-# INLINE span #-}
-span = G.span
 
 -- | /O(n)/ Split the vector into the longest prefix of elements that do not
 -- satisfy the predicate and the rest without copying.
 break :: (a -> Bool) -> Vector a -> (Vector a, Vector a)
+break f as = case G.break f as of
+  (l,r) -> (mix l, mix r)
 {-# INLINE break #-}
-break = G.break
 
 -- Searching
 -- ---------
 
 infix 4 `elem`
 -- | /O(n)/ Check if the vector contains an element
-elem :: Eq a => a -> Vector a -> Bool
-{-# INLINE elem #-}
+elem :: (G.Vector v a, Eq a) => a -> v a -> Bool
 elem = G.elem
+{-# INLINE elem #-}
 
 infix 4 `notElem`
 -- | /O(n)/ Check if the vector does not contain an element (inverse of 'elem')
-notElem :: Eq a => a -> Vector a -> Bool
-{-# INLINE notElem #-}
+notElem :: (G.Vector v a, Eq a) => a -> Vector a -> Bool
 notElem = G.notElem
+{-# INLINE notElem #-}
 
 -- | /O(n)/ Yield 'Just' the first element matching the predicate or 'Nothing'
 -- if no such element exists.
-find :: (a -> Bool) -> Vector a -> Maybe a
-{-# INLINE find #-}
+find :: (G.Vector v a) => (a -> Bool) -> v a -> Maybe a
 find = G.find
+{-# INLINE find #-}
 
 -- | /O(n)/ Yield 'Just' the index of the first element matching the predicate
 -- or 'Nothing' if no such element exists.
-findIndex :: (a -> Bool) -> Vector a -> Maybe Int
-{-# INLINE findIndex #-}
+findIndex :: G.Vector v a => (a -> Bool) -> v a -> Maybe Int
 findIndex = G.findIndex
+{-# INLINE findIndex #-}
 
 -- | /O(n)/ Yield the indices of elements satisfying the predicate in ascending
 -- order.
-findIndices :: (a -> Bool) -> Vector a -> Vector Int
+findIndices :: G.Vector v a => (a -> Bool) -> v a -> Vector Int
+findIndices f = unboxed . G.unstream
+              . Stream.inplace (MStream.map fst . MStream.filter (f . snd) . MStream.indexed)
+              . G.stream
 {-# INLINE findIndices #-}
-findIndices = G.findIndices
 
 -- | /O(n)/ Yield 'Just' the index of the first occurence of the given element or
 -- 'Nothing' if the vector does not contain the element. This is a specialised
 -- version of 'findIndex'.
-elemIndex :: Eq a => a -> Vector a -> Maybe Int
-{-# INLINE elemIndex #-}
+elemIndex :: (G.Vector v a, Eq a) => a -> v a -> Maybe Int
 elemIndex = G.elemIndex
+{-# INLINE elemIndex #-}
 
 -- | /O(n)/ Yield the indices of all occurences of the given element in
 -- ascending order. This is a specialised version of 'findIndices'.
-elemIndices :: Eq a => a -> Vector a -> Vector Int
+elemIndices :: (G.Vector v a, Eq a) => a -> v a -> Vector Int
+elemIndices x = findIndices (x==)
 {-# INLINE elemIndices #-}
-elemIndices = G.elemIndices
+
+{-
 
 -- Folding
 -- -------

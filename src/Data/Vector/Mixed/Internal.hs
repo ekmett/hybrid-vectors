@@ -19,8 +19,8 @@
 #endif
 
 module Data.Vector.Mixed.Internal
-  ( MVector(..), mbox
-  , Vector(..), box
+  ( MVector(..), mboxed, munboxed
+  , Vector(..), boxed, unboxed
   , Mixed(..)
   ) where
 
@@ -76,11 +76,17 @@ data MVector :: * -> * -> * where
   MV :: Mixed mv v a => !(mv s a) -> MVector s a
  deriving Typeable
 
-mbox :: BM.MVector s a -> MVector s a
-mbox = MV
+munboxed :: U.Unbox a => U.MVector s a -> MVector s a
+munboxed = MV
 
-box :: B.Vector a -> Vector a
-box = V
+mboxed :: BM.MVector s a -> MVector s a
+mboxed = MV
+
+unboxed :: U.Unbox a => U.Vector a -> Vector a
+unboxed = V
+
+boxed :: B.Vector a -> Vector a
+boxed = V
 
 newtype Id a = Id { runId :: a }
 
@@ -97,9 +103,9 @@ instance GM.MVector MVector a where
     Nothing -> True -- False could allow a composite vector that _does_ overlap internally to slip through!
     Just cs -> GM.basicOverlaps cs bs
   {-# INLINE basicOverlaps #-}
-  basicUnsafeNew n = liftM mbox (GM.basicUnsafeNew n)
+  basicUnsafeNew n = liftM mboxed (GM.basicUnsafeNew n)
   {-# INLINE basicUnsafeNew #-}
-  basicUnsafeReplicate n k = liftM mbox (GM.basicUnsafeReplicate n k)
+  basicUnsafeReplicate n k = liftM mboxed (GM.basicUnsafeReplicate n k)
   {-# INLINE basicUnsafeReplicate #-}
   basicUnsafeRead (MV ks) n = GM.basicUnsafeRead ks n
   {-# INLINE basicUnsafeRead #-}

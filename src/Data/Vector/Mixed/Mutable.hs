@@ -148,19 +148,19 @@ new = G.new
 
 -- | Create a mutable vector of the given length. The length is not checked.
 unsafeNew :: PrimMonad m => Int -> m (MVector (PrimState m) a)
-unsafeNew n = liftM mbox (G.unsafeNew n)
+unsafeNew n = liftM mboxed (G.unsafeNew n)
 {-# INLINE unsafeNew #-}
 
 -- | Create a mutable vector of the given length (0 if the length is negative)
 -- and fill it with an initial value.
 replicate :: PrimMonad m => Int -> a -> m (MVector (PrimState m) a)
-replicate n a = liftM mbox (G.replicate n a)
+replicate n a = liftM mboxed (G.replicate n a)
 {-# INLINE replicate #-}
 
 -- | Create a mutable vector of the given length (0 if the length is negative)
 -- and fill it with values produced by repeatedly executing the monadic action.
 replicateM :: PrimMonad m => Int -> m a -> m (MVector (PrimState m) a)
-replicateM n m = liftM mbox (G.replicateM n m)
+replicateM n m = liftM mboxed (G.replicateM n m)
 {-# INLINE replicateM #-}
 
 -- | Create a copy of a mutable vector.
