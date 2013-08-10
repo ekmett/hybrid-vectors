@@ -76,6 +76,14 @@ data MVector :: * -> * -> * where
   MV :: Mixed mv v a => !(mv s a) -> MVector s a
  deriving Typeable
 
+{-# RULES
+"mstream/MV" forall v.
+  GM.mstream (MV v) = GM.mstream v
+
+"mstreamR/MV" forall v.
+  GM.mstreamR (MV v) = GM.mstreamR v
+  #-}
+
 munboxed :: U.Unbox a => U.MVector s a -> MVector s a
 munboxed = MV
 
@@ -142,6 +150,13 @@ instance GM.MVector MVector a where
 data Vector :: * -> * where
   V :: Mixed mv v a => !(v a) -> Vector a
  deriving Typeable
+
+{-# RULES
+"stream/V" forall v.
+  G.stream (V v) = G.stream v
+"streamR/V" forall v.
+  G.streamR (V v) = G.streamR v
+  #-}
 
 type instance G.Mutable Vector = MVector
 
