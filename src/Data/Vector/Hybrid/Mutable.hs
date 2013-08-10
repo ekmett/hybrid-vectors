@@ -57,74 +57,14 @@ module Data.Vector.Hybrid.Mutable
   , newWith, unsafeNewWith
   ) where
 
-import Control.Monad
-
-import qualified Data.Vector.Generic.Mutable as G
 import Control.Monad.Primitive
-
+import qualified Data.Vector.Generic.Mutable as G
+import Data.Vector.Hybrid.Internal
 import Prelude hiding ( length, null, replicate, reverse, map, read, take, drop, init, tail )
 
-import Data.Typeable
-
-data MVector :: (* -> * -> *) -> (* -> * -> *) -> * -> * -> * where
-  MV :: !(u s a) -> !(v s b) -> MVector u v s (a, b)
-
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
- deriving Typeable
-#else
-
--- custom Typeable
-instance (Typeable2 u, Typeable2 v) => Typeable2 (MVector u v) where
-  typeOf2 (_ :: MVector u v s ab) = mkTyConApp mvectorTyCon [typeOf2 (undefined :: u s a), typeOf2 (undefined :: v s b)]
-
-mvectorTyCon :: TyCon
-#if MIN_VERSION_base(4,4,0)
-mvectorTyCon = mkTyCon3 "hybrid-vectors" "Data.Vector.Hybrid.Mutable" "MVector"
-#else
-mvectorTyCon = mkTyCon "Data.Vector.Hybrid.Mutable.MVector"
-#endif
-
-#endif
-
 type IOVector u v = MVector u v RealWorld
+
 type STVector = MVector
-
-instance (G.MVector u a, G.MVector v b) => G.MVector (MVector u v) (a, b) where
-  basicLength (MV ks _) = G.basicLength ks
-  {-# INLINE basicLength #-}
-  basicUnsafeSlice s e (MV ks vs) = MV (G.basicUnsafeSlice s e ks) (G.basicUnsafeSlice s e vs)
-  {-# INLINE basicUnsafeSlice #-}
-  basicOverlaps (MV ks vs) (MV ks' vs') = G.basicOverlaps ks ks' || G.basicOverlaps vs vs'
-  {-# INLINE basicOverlaps #-}
-  basicUnsafeNew n = liftM2 MV (G.basicUnsafeNew n) (G.basicUnsafeNew n)
-  {-# INLINE basicUnsafeNew #-}
-  basicUnsafeReplicate n (k,v) = liftM2 MV (G.basicUnsafeReplicate n k) (G.basicUnsafeReplicate n v)
-  {-# INLINE basicUnsafeReplicate #-}
-  basicUnsafeRead (MV ks vs) n = liftM2 (,) (G.basicUnsafeRead ks n) (G.basicUnsafeRead vs n)
-  {-# INLINE basicUnsafeRead #-}
-  basicUnsafeWrite (MV ks vs) n (k,v) = do
-    G.basicUnsafeWrite ks n k
-    G.basicUnsafeWrite vs n v
-  {-# INLINE basicUnsafeWrite #-}
-  basicClear (MV ks vs) = do
-    G.basicClear ks
-    G.basicClear vs
-  {-# INLINE basicClear #-}
-  basicSet (MV ks vs) (k,v) = do
-    G.basicSet ks k
-    G.basicSet vs v
-  {-# INLINE basicSet #-}
-  basicUnsafeCopy (MV ks vs) (MV ks' vs') = do
-    G.basicUnsafeCopy ks ks'
-    G.basicUnsafeCopy vs vs'
-  {-# INLINE basicUnsafeCopy #-}
-  basicUnsafeMove (MV ks vs) (MV ks' vs') = do
-    G.basicUnsafeMove ks ks'
-    G.basicUnsafeMove vs vs'
-  {-# INLINE basicUnsafeMove #-}
-  basicUnsafeGrow (MV ks vs) n = liftM2 MV (G.basicUnsafeGrow ks n) (G.basicUnsafeGrow vs n)
-  {-# INLINE basicUnsafeGrow #-}
-
 
 -- Length information
 -- ------------------
