@@ -81,8 +81,7 @@ module Data.Vector.Mixed
   -- ** Zipping
   , zipWith, zipWith3, zipWith4, zipWith5, zipWith6
   , izipWith, izipWith3, izipWith4, izipWith5, izipWith6
-{-
-  , zip, zip3, zip4, zip5, zip6
+  , zip {-, zip3, zip4, zip5, zip6
 
   -- ** Monadic zipping
   , zipWithM, zipWithM_
@@ -141,6 +140,7 @@ module Data.Vector.Mixed
   ) where
 
 
+-- import qualified Data.Vector.Hybrid.Internal as H
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Generic.Mutable as GM
 import qualified Data.Vector.Generic.New as New
@@ -828,17 +828,17 @@ zipWith3 :: (G.Vector va a, G.Vector vb b, G.Vector vc c)
 zipWith3 k a b c = box (G.unstream (Stream.zipWith3 k (G.stream a) (G.stream b) (G.stream c)))
 {-# INLINE zipWith3 #-}
 
-zipWith4 :: (Mixed ua va a, Mixed ub vb b, Mixed uc vc c, Mixed ud vd d)
+zipWith4 :: (G.Vector va a, G.Vector vb b, G.Vector vc c, G.Vector vd d)
          => (a -> b -> c -> d -> e) -> va a -> vb b -> vc c -> vd d -> Vector e
 zipWith4 k a b c d = box (G.unstream (Stream.zipWith4 k (G.stream a) (G.stream b) (G.stream c) (G.stream d)))
 {-# INLINE zipWith4 #-}
 
-zipWith5 :: (Mixed ua va a, Mixed ub vb b, Mixed uc vc c, Mixed ud vd d, Mixed ue ve e)
+zipWith5 :: (G.Vector va a, G.Vector vb b, G.Vector vc c, G.Vector vd d, G.Vector ve e)
          => (a -> b -> c -> d -> e -> f) -> va a -> vb b -> vc c -> vd d -> ve e -> Vector f
 zipWith5 k a b c d e = box (G.unstream (Stream.zipWith5 k (G.stream a) (G.stream b) (G.stream c) (G.stream d) (G.stream e)))
 {-# INLINE zipWith5 #-}
 
-zipWith6 :: (Mixed ua va a, Mixed ub vb b, Mixed uc vc c, Mixed ud vd d, Mixed ue ve e, Mixed uf vf f)
+zipWith6 :: (G.Vector va a, G.Vector vb b, G.Vector vc c, G.Vector vd d, G.Vector ve e, G.Vector vf f)
          => (a -> b -> c -> d -> e -> f -> g) -> va a -> vb b -> vc c -> vd d -> ve e -> vf f -> Vector g
 zipWith6 k a b c d e f = box (G.unstream (Stream.zipWith6 k (G.stream a) (G.stream b) (G.stream c) (G.stream d) (G.stream e) (G.stream f)))
 {-# INLINE zipWith6 #-}
@@ -861,48 +861,48 @@ izipWith3 f xs ys zs = box $ G.unstream $
    Stream.zipWith3 (uncurry f) (Stream.indexed (G.stream xs)) (G.stream ys) (G.stream zs)
 {-# INLINE izipWith3 #-}
 
-izipWith4 :: (Mixed ua va a, Mixed ub vb b, Mixed uc vc c, Mixed ud vd d)
+izipWith4 :: (G.Vector va a, G.Vector vb b, G.Vector vc c, G.Vector vd d)
          => (Int -> a -> b -> c -> d -> e) -> va a -> vb b -> vc c -> vd d -> Vector e
 izipWith4 f xs ys zs ws = box $ G.unstream $
    Stream.zipWith4 (uncurry f) (Stream.indexed (G.stream xs)) (G.stream ys) (G.stream zs) (G.stream ws)
 {-# INLINE izipWith4 #-}
 
-izipWith5 :: (Mixed ua va a, Mixed ub vb b, Mixed uc vc c, Mixed ud vd d, Mixed ue ve e)
+izipWith5 :: (G.Vector va a, G.Vector vb b, G.Vector vc c, G.Vector vd d, G.Vector ve e)
          => (Int -> a -> b -> c -> d -> e -> f) -> va a -> vb b -> vc c -> vd d -> ve e -> Vector f
 izipWith5 k a b c d e = box (G.unstream (Stream.zipWith5 (uncurry k) (Stream.indexed (G.stream a)) (G.stream b) (G.stream c) (G.stream d) (G.stream e)))
 {-# INLINE izipWith5 #-}
 
-izipWith6 :: (Mixed ua va a, Mixed ub vb b, Mixed uc vc c, Mixed ud vd d, Mixed ue ve e, Mixed uf vf f)
+izipWith6 :: (G.Vector va a, G.Vector vb b, G.Vector vc c, G.Vector vd d, G.Vector ve e, G.Vector vf f)
          => (Int -> a -> b -> c -> d -> e -> f -> g) -> va a -> vb b -> vc c -> vd d -> ve e -> vf f -> Vector g
 izipWith6 k a b c d e f = box (G.unstream (Stream.zipWith6 (uncurry k) (Stream.indexed (G.stream a)) (G.stream b) (G.stream c) (G.stream d) (G.stream e) (G.stream f)))
 {-# INLINE izipWith6 #-}
 
+-- | Elementwise pairing of array elements.
+zip :: (G.Vector v a, G.Vector v' b) => v a -> v' b -> Vector (a, b)
+-- zip a b = mix (H.V a b) -- we need to trim appropriately
+zip = zipWith (,)
+{-# INLINE zip #-}
 
 {-
--- | Elementwise pairing of array elements.
-zip :: Vector a -> Vector b -> Vector (a, b)
-{-# INLINE zip #-}
-zip = G.zip
-
 -- | zip together three vectors into a vector of triples
 zip3 :: Vector a -> Vector b -> Vector c -> Vector (a, b, c)
-{-# INLINE zip3 #-}
 zip3 = G.zip3
+{-# INLINE zip3 #-}
 
 zip4 :: Vector a -> Vector b -> Vector c -> Vector d
      -> Vector (a, b, c, d)
-{-# INLINE zip4 #-}
 zip4 = G.zip4
+{-# INLINE zip4 #-}
 
 zip5 :: Vector a -> Vector b -> Vector c -> Vector d -> Vector e
      -> Vector (a, b, c, d, e)
-{-# INLINE zip5 #-}
 zip5 = G.zip5
+{-# INLINE zip5 #-}
 
 zip6 :: Vector a -> Vector b -> Vector c -> Vector d -> Vector e -> Vector f
      -> Vector (a, b, c, d, e, f)
-{-# INLINE zip6 #-}
 zip6 = G.zip6
+{-# INLINE zip6 #-}
 
 -- Unzipping
 -- ---------
