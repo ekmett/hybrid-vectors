@@ -621,19 +621,19 @@ accum :: Mixed u v a => (a -> b -> a) -- ^ accumulating function @f@
       -> v a      -- ^ initial vector (of length @m@)
       -> [(Int,b)]     -- ^ list of index/value pairs (of length @n@)
       -> Vector a
-accum f m xs = mix (G.accum f m xs)
+accum f v us = mix (accum_stream f v (Stream.fromList us))
 {-# INLINE accum #-}
 
 -- | /O(m+n)/ For each pair @(i,b)@ from the vector of pairs, replace the vector
 -- element @a@ at position @i@ by @f a b@.
 --
 -- > accumulate (+) <5,9,2> <(2,4),(1,6),(0,3),(1,7)> = <5+3, 9+6+7, 2+4>
-accumulate :: (Mixed u v a, Mixed u' v' (Int, b))
+accumulate :: (Mixed u v a, G.Vector v' (Int, b))
            => (a -> b -> a)  -- ^ accumulating function @f@
            -> v a       -- ^ initial vector (of length @m@)
            -> v' (Int,b) -- ^ vector of index/value pairs (of length @n@)
            -> Vector a
-accumulate f m n = G.accumulate f (mix m) (mix n)
+accumulate f v us = mix (accum_stream f v (G.stream us))
 {-# INLINE accumulate #-}
 
 -- | /O(m+min(n1,n2))/ For each index @i@ from the index vector and the
@@ -650,14 +650,20 @@ accumulate f m n = G.accumulate f (mix m) (mix n)
 -- accumulate_ f as is bs = 'accumulate' f as ('zip' is bs)
 -- @
 accumulate_
-  :: (Mixed u v a, Mixed u' v' Int, Mixed u'' v'' b)
+  :: (Mixed u v a, G.Vector v' Int, G.Vector v'' b)
   => (a -> b -> a) -- ^ accumulating function @f@
   -> v a      -- ^ initial vector (of length @m@)
   -> v' Int    -- ^ index vector (of length @n1@)
   -> v'' b      -- ^ value vector (of length @n2@)
   -> Vector a
-accumulate_ f a b c = G.accumulate_ f (mix a) (mix b) (mix c)
+accumulate_ f v is xs = mix (accum_stream f v (Stream.zipWith (,) (G.stream is) (G.stream xs)))
 {-# INLINE accumulate_ #-}
+
+
+accum_stream :: G.Vector v a => (a -> b -> a) -> v a -> Stream (Int,b) -> v a
+{-# INLINE accum_stream #-}
+accum_stream f = modifyWithStream (GM.accum f)
+
 
 -- | Same as 'accum' but without bounds checking.
 unsafeAccum :: Mixed u v a => (a -> b -> a) -> v a -> [(Int,b)] -> Vector a
