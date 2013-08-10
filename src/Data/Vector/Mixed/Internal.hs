@@ -3,6 +3,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -143,8 +144,18 @@ instance G.Vector Vector a where
   {-# INLINE basicUnsafeSlice #-}
   basicUnsafeIndexM (V ks) n = G.basicUnsafeIndexM ks n
   {-# INLINE basicUnsafeIndexM #-}
-  -- basicUnsafeCopy (MV ks) (V ks') = G.basicUnsafeCopy ks ks' -- probably not good enough
-  -- {-# INLINE basicUnsafeCopy #-}
+  basicUnsafeCopy (MV dst) (V src) = case cast2 dst of
+      Just dst' -> G.basicUnsafeCopy dst' src
+      Nothing -> go 0
+    where
+      !n = G.basicLength src
+      go i
+        | i < n = do
+          x <- G.basicUnsafeIndexM src i
+          GM.basicUnsafeWrite dst i x
+          go (i+1)
+        | otherwise = return ()
+  {-# INLINE basicUnsafeCopy #-}
   elemseq (V ks) k b = G.elemseq ks k b
   {-# INLINE elemseq #-}
 
