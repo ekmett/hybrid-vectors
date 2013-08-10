@@ -6,6 +6,22 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE Rank2Types #-}
+-----------------------------------------------------------------------------
+-- |
+-- Copyright   :  (C) 2011 Edward Kmett,
+-- License     :  BSD-style (see the file LICENSE)
+--
+-- Maintainer  :  Edward Kmett <ekmett@gmail.com>
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+-- A hybrid 'Vector' lets you make a 'Vector' which is 'partially unboxed', by
+-- making a 'Vector' out of two other 'Vector' types and using each for its
+-- corresponding side of a 'Vector' of pairs.
+--
+-- This enables you to work with a mixture of boxed and unboxed data when
+-- you go to use something @like vector-algorithms@
+-----------------------------------------------------------------------------
 module Data.Vector.Hybrid
   ( Vector, MVector
 
@@ -117,6 +133,9 @@ module Data.Vector.Hybrid
   , scanr, scanr', scanr1, scanr1'
 
   -- * Conversions
+  , projectFst
+  , projectSnd
+  , unsafeZip
 
   -- ** Lists
   , toList, fromList, fromListN
@@ -1122,6 +1141,19 @@ scanr1' = G.scanr1'
 
 -- Conversions - Lists
 -- ------------------------
+
+projectFst :: Vector u v (a, b) -> u a
+projectFst (V as _) = as
+{-# INLINE projectFst #-}
+
+projectSnd :: Vector u v (a, b) -> v b
+projectSnd (V _ bs) = bs
+{-# INLINE projectSnd #-}
+
+-- | Warning: The vectors are assumed to have the same length. This is not checked!
+unsafeZip :: u a -> v b -> Vector u v (a, b)
+unsafeZip = V
+{-# INLINE unsafeZip #-}
 
 -- | /O(n)/ Convert a vector to a list
 toList :: (G.Vector u a, G.Vector v b) => Vector u v (a, b) -> [(a, b)]

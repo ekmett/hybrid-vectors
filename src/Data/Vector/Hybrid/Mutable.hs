@@ -51,7 +51,7 @@ module Data.Vector.Hybrid.Mutable
   , set, copy, unsafeCopy
 
   -- * Unsafe Construction and deconstruction
-  , unsafeFromPair, unsafeFst, unsafeSnd
+  , unsafeZip, projectFst, projectSnd
 
   -- * Deprecated operations
   , newWith, unsafeNewWith
@@ -257,17 +257,18 @@ unsafeCopy = G.unsafeCopy
 -- Unsafe composition and decomposition
 -- ------------------------------------
 
-unsafeFromPair :: u s a -> v s b -> MVector u v s (a, b)
-unsafeFromPair = MV
-{-# INLINE unsafeFromPair #-}
+-- | The mutable vectors are assumed to be of the same length and to not overlap. This is not checked.
+unsafeZip :: u s a -> v s b -> MVector u v s (a, b)
+unsafeZip = MV
+{-# INLINE unsafeZip #-}
 
-unsafeFst :: MVector u v s (a, b) -> u s a
-unsafeFst (MV ks _) = ks
-{-# INLINE unsafeFst #-}
+projectFst :: MVector u v s (a, b) -> u s a
+projectFst (MV ks _) = ks
+{-# INLINE projectFst #-}
 
-unsafeSnd :: MVector u v s (a, b) -> v s b
-unsafeSnd (MV _ vs) = vs
-{-# INLINE unsafeSnd #-}
+projectSnd :: MVector u v s (a, b) -> v s b
+projectSnd (MV _ vs) = vs
+{-# INLINE projectSnd #-}
 
 -- Deprecated functions
 -- --------------------
