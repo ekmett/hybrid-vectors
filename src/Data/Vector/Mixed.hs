@@ -101,7 +101,6 @@ module Data.Vector.Mixed
   -- ** Searching
   , elem, notElem, find, findIndex, findIndices, elemIndex, elemIndices
 
-{-
   -- * Folding
   , foldl, foldl1, foldl', foldl1', foldr, foldr1, foldr', foldr1'
   , ifoldl, ifoldl', ifoldr, ifoldr'
@@ -119,6 +118,7 @@ module Data.Vector.Mixed
   -- ** Monadic sequencing
   , sequence, sequence_
 
+{-
   -- * Prefix sums (scans)
   , prescanl, prescanl'
   , postscanl, postscanl'
@@ -1074,211 +1074,210 @@ elemIndices :: (G.Vector v a, Eq a) => a -> v a -> Vector Int
 elemIndices x = findIndices (x==)
 {-# INLINE elemIndices #-}
 
-{-
-
 -- Folding
 -- -------
 
 -- | /O(n)/ Left fold
-foldl :: (a -> b -> a) -> a -> Vector b -> a
-{-# INLINE foldl #-}
+foldl :: G.Vector v b => (a -> b -> a) -> a -> v b -> a
 foldl = G.foldl
+{-# INLINE foldl #-}
 
 -- | /O(n)/ Left fold on non-empty vectors
-foldl1 :: (a -> a -> a) -> Vector a -> a
-{-# INLINE foldl1 #-}
+foldl1 :: G.Vector v a => (a -> a -> a) -> v a -> a
 foldl1 = G.foldl1
+{-# INLINE foldl1 #-}
 
 -- | /O(n)/ Left fold with strict accumulator
-foldl' :: (a -> b -> a) -> a -> Vector b -> a
-{-# INLINE foldl' #-}
+foldl' :: G.Vector v b => (a -> b -> a) -> a -> v b -> a
 foldl' = G.foldl'
+{-# INLINE foldl' #-}
 
 -- | /O(n)/ Left fold on non-empty vectors with strict accumulator
-foldl1' :: (a -> a -> a) -> Vector a -> a
-{-# INLINE foldl1' #-}
+foldl1' :: G.Vector v a => (a -> a -> a) -> v a -> a
 foldl1' = G.foldl1'
+{-# INLINE foldl1' #-}
 
 -- | /O(n)/ Right fold
-foldr :: (a -> b -> b) -> b -> Vector a -> b
-{-# INLINE foldr #-}
+foldr :: G.Vector v a => (a -> b -> b) -> b -> v a -> b
 foldr = G.foldr
+{-# INLINE foldr #-}
 
 -- | /O(n)/ Right fold on non-empty vectors
-foldr1 :: (a -> a -> a) -> Vector a -> a
-{-# INLINE foldr1 #-}
+foldr1 :: G.Vector v a => (a -> a -> a) -> v a -> a
 foldr1 = G.foldr1
+{-# INLINE foldr1 #-}
 
 -- | /O(n)/ Right fold with a strict accumulator
-foldr' :: (a -> b -> b) -> b -> Vector a -> b
-{-# INLINE foldr' #-}
+foldr' :: G.Vector v a => (a -> b -> b) -> b -> v a -> b
 foldr' = G.foldr'
+{-# INLINE foldr' #-}
 
 -- | /O(n)/ Right fold on non-empty vectors with strict accumulator
-foldr1' :: (a -> a -> a) -> Vector a -> a
-{-# INLINE foldr1' #-}
+foldr1' :: G.Vector v a => (a -> a -> a) -> v a -> a
 foldr1' = G.foldr1'
+{-# INLINE foldr1' #-}
 
 -- | /O(n)/ Left fold (function applied to each element and its index)
-ifoldl :: (a -> Int -> b -> a) -> a -> Vector b -> a
-{-# INLINE ifoldl #-}
+ifoldl :: G.Vector v b => (a -> Int -> b -> a) -> a -> v b -> a
 ifoldl = G.ifoldl
+{-# INLINE ifoldl #-}
 
 -- | /O(n)/ Left fold with strict accumulator (function applied to each element
 -- and its index)
-ifoldl' :: (a -> Int -> b -> a) -> a -> Vector b -> a
-{-# INLINE ifoldl' #-}
+ifoldl' :: G.Vector v b => (a -> Int -> b -> a) -> a -> v b -> a
 ifoldl' = G.ifoldl'
+{-# INLINE ifoldl' #-}
 
 -- | /O(n)/ Right fold (function applied to each element and its index)
-ifoldr :: (Int -> a -> b -> b) -> b -> Vector a -> b
-{-# INLINE ifoldr #-}
+ifoldr :: G.Vector v a => (Int -> a -> b -> b) -> b -> v a -> b
 ifoldr = G.ifoldr
+{-# INLINE ifoldr #-}
 
 -- | /O(n)/ Right fold with strict accumulator (function applied to each
 -- element and its index)
-ifoldr' :: (Int -> a -> b -> b) -> b -> Vector a -> b
-{-# INLINE ifoldr' #-}
+ifoldr' :: G.Vector v a => (Int -> a -> b -> b) -> b -> v a -> b
 ifoldr' = G.ifoldr'
+{-# INLINE ifoldr' #-}
 
 -- Specialised folds
 -- -----------------
 
 -- | /O(n)/ Check if all elements satisfy the predicate.
-all :: (a -> Bool) -> Vector a -> Bool
-{-# INLINE all #-}
+all :: G.Vector v a => (a -> Bool) -> v a -> Bool
 all = G.all
+{-# INLINE all #-}
 
 -- | /O(n)/ Check if any element satisfies the predicate.
-any :: (a -> Bool) -> Vector a -> Bool
+any :: G.Vector v a => (a -> Bool) -> v a -> Bool
 {-# INLINE any #-}
 any = G.any
 
 -- | /O(n)/ Check if all elements are 'True'
-and :: Vector Bool -> Bool
-{-# INLINE and #-}
+and :: G.Vector v Bool => v Bool -> Bool
 and = G.and
+{-# INLINE and #-}
 
 -- | /O(n)/ Check if any element is 'True'
-or :: Vector Bool -> Bool
+or :: G.Vector v Bool => v Bool -> Bool
 {-# INLINE or #-}
 or = G.or
 
 -- | /O(n)/ Compute the sum of the elements
-sum :: Num a => Vector a -> a
-{-# INLINE sum #-}
+sum :: (G.Vector v a, Num a) => v a -> a
 sum = G.sum
+{-# INLINE sum #-}
 
 -- | /O(n)/ Compute the produce of the elements
-product :: Num a => Vector a -> a
-{-# INLINE product #-}
+product :: (G.Vector v a, Num a) => v a -> a
 product = G.product
+{-# INLINE product #-}
 
 -- | /O(n)/ Yield the maximum element of the vector. The vector may not be
 -- empty.
-maximum :: Ord a => Vector a -> a
-{-# INLINE maximum #-}
+maximum :: (G.Vector v a, Ord a) => v a -> a
 maximum = G.maximum
+{-# INLINE maximum #-}
 
 -- | /O(n)/ Yield the maximum element of the vector according to the given
 -- comparison function. The vector may not be empty.
-maximumBy :: (a -> a -> Ordering) -> Vector a -> a
-{-# INLINE maximumBy #-}
+maximumBy :: G.Vector v a => (a -> a -> Ordering) -> v a -> a
 maximumBy = G.maximumBy
+{-# INLINE maximumBy #-}
 
 -- | /O(n)/ Yield the minimum element of the vector. The vector may not be
 -- empty.
-minimum :: Ord a => Vector a -> a
-{-# INLINE minimum #-}
+minimum :: (G.Vector v a, Ord a) => v a -> a
 minimum = G.minimum
+{-# INLINE minimum #-}
 
 -- | /O(n)/ Yield the minimum element of the vector according to the given
 -- comparison function. The vector may not be empty.
-minimumBy :: (a -> a -> Ordering) -> Vector a -> a
-{-# INLINE minimumBy #-}
+minimumBy :: G.Vector v a => (a -> a -> Ordering) -> v a -> a
 minimumBy = G.minimumBy
+{-# INLINE minimumBy #-}
 
 -- | /O(n)/ Yield the index of the maximum element of the vector. The vector
 -- may not be empty.
-maxIndex :: Ord a => Vector a -> Int
-{-# INLINE maxIndex #-}
+maxIndex :: (G.Vector v a, Ord a) => v a -> Int
 maxIndex = G.maxIndex
+{-# INLINE maxIndex #-}
 
 -- | /O(n)/ Yield the index of the maximum element of the vector according to
 -- the given comparison function. The vector may not be empty.
-maxIndexBy :: (a -> a -> Ordering) -> Vector a -> Int
-{-# INLINE maxIndexBy #-}
+maxIndexBy :: G.Vector v a => (a -> a -> Ordering) -> v a -> Int
 maxIndexBy = G.maxIndexBy
+{-# INLINE maxIndexBy #-}
 
 -- | /O(n)/ Yield the index of the minimum element of the vector. The vector
 -- may not be empty.
-minIndex :: Ord a => Vector a -> Int
-{-# INLINE minIndex #-}
+minIndex :: (G.Vector v a, Ord a) => v a -> Int
 minIndex = G.minIndex
+{-# INLINE minIndex #-}
 
 -- | /O(n)/ Yield the index of the minimum element of the vector according to
 -- the given comparison function. The vector may not be empty.
-minIndexBy :: (a -> a -> Ordering) -> Vector a -> Int
-{-# INLINE minIndexBy #-}
+minIndexBy :: G.Vector v a => (a -> a -> Ordering) -> v a -> Int
 minIndexBy = G.minIndexBy
+{-# INLINE minIndexBy #-}
 
 -- Monadic folds
 -- -------------
 
 -- | /O(n)/ Monadic fold
-foldM :: Monad m => (a -> b -> m a) -> a -> Vector b -> m a
-{-# INLINE foldM #-}
+foldM :: (G.Vector v b, Monad m) => (a -> b -> m a) -> a -> v b -> m a
 foldM = G.foldM
+{-# INLINE foldM #-}
 
 -- | /O(n)/ Monadic fold over non-empty vectors
-fold1M :: Monad m => (a -> a -> m a) -> Vector a -> m a
-{-# INLINE fold1M #-}
+fold1M :: (G.Vector v a, Monad m) => (a -> a -> m a) -> v a -> m a
 fold1M = G.fold1M
+{-# INLINE fold1M #-}
 
 -- | /O(n)/ Monadic fold with strict accumulator
-foldM' :: Monad m => (a -> b -> m a) -> a -> Vector b -> m a
-{-# INLINE foldM' #-}
+foldM' :: (G.Vector v b, Monad m) => (a -> b -> m a) -> a -> v b -> m a
 foldM' = G.foldM'
+{-# INLINE foldM' #-}
 
 -- | /O(n)/ Monadic fold over non-empty vectors with strict accumulator
-fold1M' :: Monad m => (a -> a -> m a) -> Vector a -> m a
-{-# INLINE fold1M' #-}
+fold1M' :: (G.Vector v a, Monad m) => (a -> a -> m a) -> v a -> m a
 fold1M' = G.fold1M'
+{-# INLINE fold1M' #-}
 
 -- | /O(n)/ Monadic fold that discards the result
-foldM_ :: Monad m => (a -> b -> m a) -> a -> Vector b -> m ()
-{-# INLINE foldM_ #-}
+foldM_ :: (G.Vector v b, Monad m) => (a -> b -> m a) -> a -> v b -> m ()
 foldM_ = G.foldM_
+{-# INLINE foldM_ #-}
 
 -- | /O(n)/ Monadic fold over non-empty vectors that discards the result
-fold1M_ :: Monad m => (a -> a -> m a) -> Vector a -> m ()
-{-# INLINE fold1M_ #-}
+fold1M_ :: (G.Vector v a, Monad m) => (a -> a -> m a) -> v a -> m ()
 fold1M_ = G.fold1M_
+{-# INLINE fold1M_ #-}
 
 -- | /O(n)/ Monadic fold with strict accumulator that discards the result
-foldM'_ :: Monad m => (a -> b -> m a) -> a -> Vector b -> m ()
-{-# INLINE foldM'_ #-}
+foldM'_ :: (G.Vector v b, Monad m) => (a -> b -> m a) -> a -> v b -> m ()
 foldM'_ = G.foldM'_
+{-# INLINE foldM'_ #-}
 
 -- | /O(n)/ Monadic fold over non-empty vectors with strict accumulator
 -- that discards the result
-fold1M'_ :: Monad m => (a -> a -> m a) -> Vector a -> m ()
-{-# INLINE fold1M'_ #-}
+fold1M'_ :: (G.Vector v a, Monad m) => (a -> a -> m a) -> Vector a -> m ()
 fold1M'_ = G.fold1M'_
+{-# INLINE fold1M'_ #-}
 
 -- Monadic sequencing
 -- ------------------
 
 -- | Evaluate each action and collect the results
-sequence :: Monad m => Vector (m a) -> m (Vector a)
+sequence :: (Mixed u v (m a), Monad m) => v (m a) -> m (Vector a)
+sequence = mapM id
 {-# INLINE sequence #-}
-sequence = G.sequence
 
 -- | Evaluate each action and discard the results
-sequence_ :: Monad m => Vector (m a) -> m ()
+sequence_ :: (G.Vector v (m a), Monad m) => v (m a) -> m ()
+sequence_ = mapM_ id
 {-# INLINE sequence_ #-}
-sequence_ = G.sequence_
 
+{-
 -- Prefix sums (scans)
 -- -------------------
 
