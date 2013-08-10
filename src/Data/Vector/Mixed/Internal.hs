@@ -27,6 +27,8 @@ module Data.Vector.Mixed.Internal
 import Control.Applicative
 import Control.Monad
 import Data.Monoid
+import Data.Foldable
+import Data.Traversable
 import qualified Data.Vector.Generic.Mutable as GM
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector as B
@@ -193,17 +195,63 @@ instance Eq a => Eq (Vector a) where
 
 -- See http://trac.haskell.org/vector/ticket/12
 instance Ord a => Ord (Vector a) where
-  {-# INLINE compare #-}
   compare xs ys = Stream.cmp (G.stream xs) (G.stream ys)
+  {-# INLINE compare #-}
 
-  {-# INLINE (<) #-}
   xs < ys = Stream.cmp (G.stream xs) (G.stream ys) == LT
+  {-# INLINE (<) #-}
 
-  {-# INLINE (<=) #-}
   xs <= ys = Stream.cmp (G.stream xs) (G.stream ys) /= GT
+  {-# INLINE (<=) #-}
 
-  {-# INLINE (>) #-}
   xs > ys = Stream.cmp (G.stream xs) (G.stream ys) == GT
+  {-# INLINE (>) #-}
 
-  {-# INLINE (>=) #-}
   xs >= ys = Stream.cmp (G.stream xs) (G.stream ys) /= LT
+  {-# INLINE (>=) #-}
+
+instance Functor Vector where
+  fmap = G.map
+  {-# INLINE fmap #-}
+
+instance Monad Vector where
+  return = G.singleton
+  {-# INLINE return #-}
+
+  (>>=) = flip G.concatMap
+  {-# INLINE (>>=) #-}
+
+instance MonadPlus Vector where
+  {-# INLINE mzero #-}
+  mzero = G.empty
+
+  {-# INLINE mplus #-}
+  mplus = (G.++)
+
+instance Applicative Vector where
+  pure = G.singleton
+  {-# INLINE pure #-}
+
+  (<*>) = ap
+  {-# INLINE (<*>) #-}
+
+instance Alternative Vector where
+  empty = G.empty
+  {-# INLINE empty #-}
+
+  (<|>) = (G.++)
+  {-# INLINE (<|>) #-}
+
+instance Foldable Vector where
+  {-# INLINE foldr #-}
+  foldr = G.foldr
+
+  {-# INLINE foldl #-}
+  foldl = G.foldl
+
+  {-# INLINE foldr1 #-}
+  foldr1 = G.foldr1
+
+  {-# INLINE foldl1 #-}
+  foldl1 = G.foldl1
+
