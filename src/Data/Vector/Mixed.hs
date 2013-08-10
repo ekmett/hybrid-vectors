@@ -275,33 +275,32 @@ indexM = G.indexM
 -- | /O(1)/ First element of a vector in a monad. See 'indexM' for an
 -- explanation of why this is useful.
 headM :: (Monad m, G.Vector v a) => v a -> m a
-{-# INLINE headM #-}
 headM = G.headM
+{-# INLINE headM #-}
 
 -- | /O(1)/ Last element of a vector in a monad. See 'indexM' for an
 -- explanation of why this is useful.
 lastM :: (Monad m, G.Vector v a) => v a -> m a
-{-# INLINE lastM #-}
 lastM = G.lastM
+{-# INLINE lastM #-}
 
 -- | /O(1)/ Indexing in a monad without bounds checks. See 'indexM' for an
 -- explanation of why this is useful.
 unsafeIndexM :: (Monad m, G.Vector v a) => v a -> Int -> m a
-{-# INLINE unsafeIndexM #-}
 unsafeIndexM = G.unsafeIndexM
+{-# INLINE unsafeIndexM #-}
 
 -- | /O(1)/ First element in a monad without checking for empty vectors.
 -- See 'indexM' for an explanation of why this is useful.
 unsafeHeadM :: (Monad m, G.Vector v a) => v a -> m a
-{-# INLINE unsafeHeadM #-}
 unsafeHeadM = G.unsafeHeadM
+{-# INLINE unsafeHeadM #-}
 
 -- | /O(1)/ Last element in a monad without checking for empty vectors.
 -- See 'indexM' for an explanation of why this is useful.
 unsafeLastM :: (Monad m, G.Vector v a) => v a -> m a
-{-# INLINE unsafeLastM #-}
 unsafeLastM = G.unsafeLastM
-
+{-# INLINE unsafeLastM #-}
 
 -- Extracting subvectors (slicing)
 -- -------------------------------
@@ -312,41 +311,41 @@ slice :: Mixed u v a => Int   -- ^ @i@ starting index
                  -> Int   -- ^ @n@ length
                  -> v a
                  -> Vector a
-{-# INLINE slice #-}
 slice i j m = mix (G.slice i j m)
+{-# INLINE slice #-}
 
 -- | /O(1)/ Yield all but the last element without copying. The vector may not
 -- be empty.
 init :: Mixed u v a => v a -> Vector a
-{-# INLINE init #-}
 init m = mix (G.init m)
+{-# INLINE init #-}
 
 -- | /O(1)/ Yield all but the first element without copying. The vector may not
 -- be empty.
 tail :: Mixed u v a => v a -> Vector a
-{-# INLINE tail #-}
 tail m = mix (G.tail m)
+{-# INLINE tail #-}
 
 -- | /O(1)/ Yield at the first @n@ elements without copying. The vector may
 -- contain less than @n@ elements in which case it is returned unchanged.
 take :: Mixed u v a => Int -> v a -> Vector a
-{-# INLINE take #-}
 take i m = mix (G.take i m)
+{-# INLINE take #-}
 
 -- | /O(1)/ Yield all but the first @n@ elements without copying. The vector may
 -- contain less than @n@ elements in which case an empty vector is returned.
 drop :: Mixed u v a => Int -> v a -> Vector a
-{-# INLINE drop #-}
 drop i m = mix (G.drop i m)
+{-# INLINE drop #-}
 
 -- | /O(1)/ Yield the first @n@ elements paired with the remainder without copying.
 --
 -- Note that @'splitAt' n v@ is equivalent to @('take' n v, 'drop' n v)@
 -- but slightly more efficient.
-{-# INLINE splitAt #-}
 splitAt :: Mixed u v a => Int -> v a -> (Vector a, Vector a)
 splitAt i m = case G.splitAt i m of
   (xs, ys) -> (mix xs, mix ys)
+{-# INLINE splitAt #-}
 
 -- | /O(1)/ Yield a slice of the vector without copying. The vector must
 -- contain at least @i+n@ elements but this is not checked.
@@ -354,32 +353,32 @@ unsafeSlice :: Mixed u v a => Int   -- ^ @i@ starting index
                        -> Int   -- ^ @n@ length
                        -> v a
                        -> Vector a
-{-# INLINE unsafeSlice #-}
 unsafeSlice i j m = mix (G.unsafeSlice i j m)
+{-# INLINE unsafeSlice #-}
 
 -- | /O(1)/ Yield all but the last element without copying. The vector may not
 -- be empty but this is not checked.
 unsafeInit :: Mixed u v a => v a -> Vector a
-{-# INLINE unsafeInit #-}
 unsafeInit m = mix (G.unsafeInit m)
+{-# INLINE unsafeInit #-}
 
 -- | /O(1)/ Yield all but the first element without copying. The vector may not
 -- be empty but this is not checked.
 unsafeTail :: Mixed u v a => v a -> Vector a
-{-# INLINE unsafeTail #-}
 unsafeTail m = mix (G.unsafeTail m)
+{-# INLINE unsafeTail #-}
 
 -- | /O(1)/ Yield the first @n@ elements without copying. The vector must
 -- contain at least @n@ elements but this is not checked.
 unsafeTake :: Mixed u v a => Int -> v a -> Vector a
-{-# INLINE unsafeTake #-}
 unsafeTake i m = mix (G.unsafeTake i m)
+{-# INLINE unsafeTake #-}
 
 -- | /O(1)/ Yield all but the first @n@ elements without copying. The vector
 -- must contain at least @n@ elements but this is not checked.
 unsafeDrop :: Mixed u v a => Int -> v a -> Vector a
-{-# INLINE unsafeDrop #-}
 unsafeDrop i m = mix (G.unsafeDrop i m)
+{-# INLINE unsafeDrop #-}
 
 -- Initialisation
 -- --------------
