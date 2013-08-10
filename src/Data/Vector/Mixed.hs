@@ -121,7 +121,6 @@ module Data.Vector.Mixed
   -- * Prefix sums (scans)
   , prescanl, prescanl'
   , postscanl, postscanl'
-{-
   , scanl, scanl', scanl1, scanl1'
   , prescanr, prescanr'
   , postscanr, postscanr'
@@ -137,7 +136,6 @@ module Data.Vector.Mixed
 
   -- ** Mutable vectors
   , freeze, thaw, copy, unsafeFreeze, unsafeThaw, unsafeCopy
--}
   ) where
 
 
@@ -154,7 +152,7 @@ import qualified Data.Vector.Fusion.Stream.Monadic as MStream
 -- import Control.DeepSeq ( NFData, rnf )
 import Control.Monad ( liftM )
 import Control.Monad.ST ( ST )
--- import Control.Monad.Primitive
+import Control.Monad.Primitive
 
 import Prelude hiding ( length, null,
                         replicate, (++), concat,
@@ -1315,7 +1313,6 @@ postscanl' f z = boxed . G.unstream . Stream.inplace (MStream.postscanl' f z) . 
 {-# INLINE postscanl' #-}
 
 
-{-
 -- | /O(n)/ Haskell-style scan
 --
 -- > scanl f z <x1,...,xn> = <y1,...,y(n+1)>
@@ -1324,14 +1321,15 @@ postscanl' f z = boxed . G.unstream . Stream.inplace (MStream.postscanl' f z) . 
 --
 -- Example: @scanl (+) 0 \<1,2,3,4\> = \<0,1,3,6,10\>@
 --
-scanl :: (a -> b -> a) -> a -> Vector b -> Vector a
+
+scanl :: G.Vector v b => (a -> b -> a) -> a -> v b -> Vector a
+scanl f z = boxed . G.unstream . Stream.scanl f z . G.stream
 {-# INLINE scanl #-}
-scanl = G.scanl
 
 -- | /O(n)/ Haskell-style scan with strict accumulator
-scanl' :: (a -> b -> a) -> a -> Vector b -> Vector a
+scanl' :: G.Vector v b => (a -> b -> a) -> a -> v b -> Vector a
+scanl' f z = boxed . G.unstream . Stream.scanl' f z . G.stream
 {-# INLINE scanl' #-}
-scanl' = G.scanl'
 
 -- | /O(n)/ Scan over a non-empty vector
 --
@@ -1339,14 +1337,14 @@ scanl' = G.scanl'
 -- >   where y1 = x1
 -- >         yi = f y(i-1) xi
 --
-scanl1 :: (a -> a -> a) -> Vector a -> Vector a
+scanl1 :: Mixed u v a => (a -> a -> a) -> v a -> Vector a
+scanl1 f = mix . G.scanl1 f
 {-# INLINE scanl1 #-}
-scanl1 = G.scanl1
 
 -- | /O(n)/ Scan over a non-empty vector with a strict accumulator
-scanl1' :: (a -> a -> a) -> Vector a -> Vector a
+scanl1' :: Mixed u v a => (a -> a -> a) -> v a -> Vector a
+scanl1' f = mix . G.scanl1' f
 {-# INLINE scanl1' #-}
-scanl1' = G.scanl1'
 
 -- | /O(n)/ Right-to-left prescan
 --
@@ -1354,58 +1352,60 @@ scanl1' = G.scanl1'
 -- prescanr f z = 'reverse' . 'prescanl' (flip f) z . 'reverse'
 -- @
 --
-prescanr :: (a -> b -> b) -> b -> Vector a -> Vector b
+prescanr :: G.Vector v a => (a -> b -> b) -> b -> v a -> Vector b
+prescanr f z = boxed . G.unstreamR . Stream.inplace (MStream.prescanl (flip f) z) . G.streamR
 {-# INLINE prescanr #-}
-prescanr = G.prescanr
 
 -- | /O(n)/ Right-to-left prescan with strict accumulator
-prescanr' :: (a -> b -> b) -> b -> Vector a -> Vector b
+prescanr' :: G.Vector v a => (a -> b -> b) -> b -> v a -> Vector b
 {-# INLINE prescanr' #-}
-prescanr' = G.prescanr'
+prescanr' f z = boxed . G.unstreamR . Stream.inplace (MStream.prescanl' (flip f) z) . G.streamR
 
 -- | /O(n)/ Right-to-left scan
-postscanr :: (a -> b -> b) -> b -> Vector a -> Vector b
+postscanr :: G.Vector v a => (a -> b -> b) -> b -> v a -> Vector b
+postscanr f z = boxed . G.unstreamR . Stream.inplace (MStream.postscanl (flip f) z) . G.streamR
 {-# INLINE postscanr #-}
-postscanr = G.postscanr
 
 -- | /O(n)/ Right-to-left scan with strict accumulator
-postscanr' :: (a -> b -> b) -> b -> Vector a -> Vector b
+postscanr' :: G.Vector v a => (a -> b -> b) -> b -> v a -> Vector b
+postscanr' f z = boxed . G.unstreamR . Stream.inplace (MStream.postscanl' (flip f) z) . G.streamR
 {-# INLINE postscanr' #-}
-postscanr' = G.postscanr'
 
 -- | /O(n)/ Right-to-left Haskell-style scan
-scanr :: (a -> b -> b) -> b -> Vector a -> Vector b
+scanr :: G.Vector v a => (a -> b -> b) -> b -> v a -> Vector b
+scanr f z = boxed . G.unstreamR . Stream.scanl (flip f) z . G.streamR
 {-# INLINE scanr #-}
-scanr = G.scanr
+
 
 -- | /O(n)/ Right-to-left Haskell-style scan with strict accumulator
-scanr' :: (a -> b -> b) -> b -> Vector a -> Vector b
+scanr' :: G.Vector v a => (a -> b -> b) -> b -> v a -> Vector b
+scanr' f z = boxed . G.unstreamR . Stream.scanl' (flip f) z . G.streamR
+
 {-# INLINE scanr' #-}
-scanr' = G.scanr'
 
 -- | /O(n)/ Right-to-left scan over a non-empty vector
-scanr1 :: (a -> a -> a) -> Vector a -> Vector a
+scanr1 :: Mixed u v a => (a -> a -> a) -> v a -> Vector a
 {-# INLINE scanr1 #-}
-scanr1 = G.scanr1
+scanr1 f = mix . G.scanr1 f
 
 -- | /O(n)/ Right-to-left scan over a non-empty vector with a strict
 -- accumulator
 scanr1' :: (a -> a -> a) -> Vector a -> Vector a
+scanr1' f = mix . G.scanr1' f
 {-# INLINE scanr1' #-}
-scanr1' = G.scanr1'
 
 -- Conversions - Lists
 -- ------------------------
 
 -- | /O(n)/ Convert a vector to a list
-toList :: Vector a -> [a]
-{-# INLINE toList #-}
+toList :: G.Vector v a => v a -> [a]
 toList = G.toList
+{-# INLINE toList #-}
 
 -- | /O(n)/ Convert a list to a vector
 fromList :: [a] -> Vector a
+fromList = boxed . G.fromList
 {-# INLINE fromList #-}
-fromList = G.fromList
 
 -- | /O(n)/ Convert the first @n@ elements of a list to a vector
 --
@@ -1413,47 +1413,48 @@ fromList = G.fromList
 -- fromListN n xs = 'fromList' ('take' n xs)
 -- @
 fromListN :: Int -> [a] -> Vector a
+fromListN n = boxed . G.fromListN n
 {-# INLINE fromListN #-}
-fromListN = G.fromListN
 
 -- Conversions - Mutable vectors
 -- -----------------------------
 
 -- | /O(1)/ Unsafe convert a mutable vector to an immutable one without
 -- copying. The mutable vector may not be used after this operation.
-unsafeFreeze :: PrimMonad m => MVector (PrimState m) a -> m (Vector a)
+unsafeFreeze :: (PrimMonad m, Mixed u v a) => u (PrimState m) a -> m (Vector a)
+unsafeFreeze = liftM mix . G.unsafeFreeze
 {-# INLINE unsafeFreeze #-}
-unsafeFreeze = G.unsafeFreeze
 
 -- | /O(1)/ Unsafely convert an immutable vector to a mutable one without
 -- copying. The immutable vector may not be used after this operation.
-unsafeThaw :: PrimMonad m => Vector a -> m (MVector (PrimState m) a)
+unsafeThaw :: (PrimMonad m, Mixed u v a) => v a -> m (MVector (PrimState m) a)
+unsafeThaw = liftM mmix . G.unsafeThaw
 {-# INLINE unsafeThaw #-}
-unsafeThaw = G.unsafeThaw
 
 -- | /O(n)/ Yield a mutable copy of the immutable vector.
-thaw :: PrimMonad m => Vector a -> m (MVector (PrimState m) a)
+thaw :: (PrimMonad m, Mixed u v a) => v a -> m (MVector (PrimState m) a)
+thaw = liftM mmix . G.thaw
 {-# INLINE thaw #-}
-thaw = G.thaw
 
 -- | /O(n)/ Yield an immutable copy of the mutable vector.
-freeze :: PrimMonad m => MVector (PrimState m) a -> m (Vector a)
+freeze :: (PrimMonad m, Mixed u v a) => u (PrimState m) a -> m (Vector a)
+freeze = liftM mix . G.freeze
 {-# INLINE freeze #-}
-freeze = G.freeze
 
 -- | /O(n)/ Copy an immutable vector into a mutable one. The two vectors must
 -- have the same length. This is not checked.
-unsafeCopy :: PrimMonad m => MVector (PrimState m) a -> Vector a -> m ()
+unsafeCopy :: (PrimMonad m, Mixed u v a, Mixed u' v' a) => u (PrimState m) a -> v' a -> m ()
+unsafeCopy dst src = G.unsafeCopy (mmix dst) (mix src)
 {-# INLINE unsafeCopy #-}
-unsafeCopy = G.unsafeCopy
 
 -- | /O(n)/ Copy an immutable vector into a mutable one. The two vectors must
 -- have the same length.
-copy :: PrimMonad m => MVector (PrimState m) a -> Vector a -> m ()
+copy :: (PrimMonad m, Mixed u v a, Mixed u' v' a) => u (PrimState m) a -> v' a -> m ()
+copy dst src = G.copy (mmix dst) (mix src)
 {-# INLINE copy #-}
-copy = G.copy
--}
 
+-- Utilities
+-- ---------
 
 unstreamM :: (Monad m, G.Vector v a) => MStream m a -> m (v a)
 unstreamM s = do
