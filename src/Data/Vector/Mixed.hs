@@ -142,10 +142,12 @@ module Data.Vector.Mixed
 
 
 import qualified Data.Vector.Generic as G
+import qualified Data.Vector.Generic.Mutable as GM
+import qualified Data.Vector.Generic.New as New
 import Data.Vector.Mixed.Internal
 import Data.Vector.Internal.Check as Ck
 import qualified Data.Vector.Fusion.Stream as Stream
-import           Data.Vector.Fusion.Stream (MStream)
+import           Data.Vector.Fusion.Stream (MStream, Stream)
 import qualified Data.Vector.Fusion.Stream.Monadic as MStream
 
 -- import Control.DeepSeq ( NFData, rnf )
@@ -552,15 +554,19 @@ force m = mix (G.force m)
 m // xs = mix (m G.// xs)
 {-# INLINE (//) #-}
 
+update_stream :: G.Vector v a => v a -> Stream (Int,a) -> v a
+update_stream = modifyWithStream GM.update
+{-# INLINE update_stream #-}
+
 -- | /O(m+n)/ For each pair @(i,a)@ from the vector of index/value pairs,
 -- replace the vector element at position @i@ by @a@.
 --
 -- > update <5,9,2,7> <(2,1),(0,3),(2,8)> = <3,9,8,7>
 --
-update :: (Mixed u v a, Mixed u' v' (Int, a)) => v a        -- ^ initial vector (of length @m@)
+update :: (Mixed u v a, G.Vector v' (Int, a)) => v a -- ^ initial vector (of length @m@)
        -> v' (Int, a) -- ^ vector of index/value pairs (of length @n@)
        -> Vector a
-update m n = G.update (mix m) (mix n)
+update v w = mix (update_stream v (G.stream w))
 {-# INLINE update #-}
 
 -- | /O(m+min(n1,n2))/ For each index @i@ from the index vector and the
@@ -575,29 +581,33 @@ update m n = G.update (mix m) (mix n)
 -- @
 -- update_ xs is ys = 'update' xs ('zip' is ys)
 -- @
-update_ :: 
-  ( Mixed u v a, Mixed u' v' Int, Mixed u'' v'' a
+update_ ::
+  ( Mixed u v a, G.Vector v' Int, G.Vector v'' a
   ) => v a   -- ^ initial vector (of length @m@)
     -> v' Int -- ^ index vector (of length @n1@)
     -> v'' a   -- ^ value vector (of length @n2@)
     -> Vector a
-update_ a b c = G.update_ (mix a) (mix b) (mix c)
+update_ v is w = mix (update_stream v (Stream.zipWith (,) (G.stream is) (G.stream w)))
 {-# INLINE update_ #-}
 
 -- | Same as ('//') but without bounds checking.
 unsafeUpd :: Mixed u v a => v a -> [(Int, a)] -> Vector a
-unsafeUpd m xs = mix (G.unsafeUpd m xs)
+unsafeUpd v us = mix (unsafeUpdate_stream v (Stream.fromList us))
 {-# INLINE unsafeUpd #-}
 
+unsafeUpdate_stream :: G.Vector v a => v a -> Stream (Int,a) -> v a
+unsafeUpdate_stream = modifyWithStream GM.unsafeUpdate
+{-# INLINE unsafeUpdate_stream #-}
+
 -- | Same as 'update' but without bounds checking.
-unsafeUpdate :: (Mixed u v a, Mixed u' v' (Int, a)) => v a -> v' (Int, a) -> Vector a
-unsafeUpdate m n = G.unsafeUpdate (mix m) (mix n)
+unsafeUpdate :: (Mixed u v a, G.Vector v' (Int, a)) => v a -> v' (Int, a) -> Vector a
+unsafeUpdate v w = mix (unsafeUpdate_stream v (G.stream w))
 {-# INLINE unsafeUpdate #-}
 
 -- | Same as 'update_' but without bounds checking.
-unsafeUpdate_ :: ( Mixed u v a, Mixed u' v' Int, Mixed u'' v'' a
+unsafeUpdate_ :: ( Mixed u v a, G.Vector v' Int, G.Vector v'' a
   ) => v a -> v' Int -> v'' a -> Vector a
-unsafeUpdate_ a b c = G.unsafeUpdate_ (mix a) (mix b) (mix c)
+unsafeUpdate_ v is w = mix (unsafeUpdate_stream v (Stream.zipWith (,) (G.stream is) (G.stream w)))
 {-# INLINE unsafeUpdate_ #-}
 
 -- Accumulations
@@ -1418,3 +1428,11 @@ unstreamM :: (Monad m, G.Vector v a) => MStream m a -> m (v a)
 unstreamM s = do
                 xs <- MStream.toList s
                 return $ G.unstream $ Stream.unsafeFromList (MStream.size s) xs
+
+-- We have to make sure that this is strict in the stream but we can't seq on
+-- it while fusion is happening. Hence this ugliness.
+modifyWithStream :: G.Vector v a
+                 => (forall s. G.Mutable v s a -> Stream b -> ST s ())
+                 -> v a -> Stream b -> v a
+{-# INLINE modifyWithStream #-}
+modifyWithStream p v s = G.new (New.modifyWithStream p (G.clone v) s)
