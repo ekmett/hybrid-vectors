@@ -906,7 +906,7 @@ sum :: (G.Vector u a, G.Vector v b, Num a) => Vector u v (a, b) -> (a, b)
 {-# INLINE sum #-}
 sum = G.sum
 
--- | /O(n)/ Compute the produce of the elements
+-- | /O(n)/ Compute the product of the elements
 product :: ((G.Vector u a, G.Vector v b), Num a) => Vector u v (a, b) -> (a, b)
 {-# INLINE product #-}
 product = G.product
