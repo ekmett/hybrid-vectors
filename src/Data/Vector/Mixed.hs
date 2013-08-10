@@ -118,10 +118,10 @@ module Data.Vector.Mixed
   -- ** Monadic sequencing
   , sequence, sequence_
 
-{-
   -- * Prefix sums (scans)
   , prescanl, prescanl'
   , postscanl, postscanl'
+{-
   , scanl, scanl', scanl1, scanl1'
   , prescanr, prescanr'
   , postscanr, postscanr'
@@ -1277,7 +1277,6 @@ sequence_ :: (G.Vector v (m a), Monad m) => v (m a) -> m ()
 sequence_ = mapM_ id
 {-# INLINE sequence_ #-}
 
-{-
 -- Prefix sums (scans)
 -- -------------------
 
@@ -1289,14 +1288,14 @@ sequence_ = mapM_ id
 --
 -- Example: @prescanl (+) 0 \<1,2,3,4\> = \<0,1,3,6\>@
 --
-prescanl :: (a -> b -> a) -> a -> Vector b -> Vector a
+prescanl :: G.Vector v b => (a -> b -> a) -> a -> v b -> Vector a
+prescanl f z = boxed . G.unstream . Stream.inplace (MStream.prescanl f z) . G.stream
 {-# INLINE prescanl #-}
-prescanl = G.prescanl
 
 -- | /O(n)/ Prescan with strict accumulator
-prescanl' :: (a -> b -> a) -> a -> Vector b -> Vector a
+prescanl' :: G.Vector v b => (a -> b -> a) -> a -> v b -> Vector a
+prescanl' f z = boxed . G.unstream . Stream.inplace (MStream.prescanl' f z) . G.stream
 {-# INLINE prescanl' #-}
-prescanl' = G.prescanl'
 
 -- | /O(n)/ Scan
 --
@@ -1306,15 +1305,17 @@ prescanl' = G.prescanl'
 --
 -- Example: @postscanl (+) 0 \<1,2,3,4\> = \<1,3,6,10\>@
 --
-postscanl :: (a -> b -> a) -> a -> Vector b -> Vector a
+postscanl :: G.Vector v b => (a -> b -> a) -> a -> v b -> Vector a
+postscanl f z = boxed . G.unstream . Stream.inplace (MStream.postscanl f z) . G.stream
 {-# INLINE postscanl #-}
-postscanl = G.postscanl
 
 -- | /O(n)/ Scan with strict accumulator
-postscanl' :: (a -> b -> a) -> a -> Vector b -> Vector a
+postscanl' :: G.Vector v b => (a -> b -> a) -> a -> v b -> Vector a
+postscanl' f z = boxed . G.unstream . Stream.inplace (MStream.postscanl' f z) . G.stream
 {-# INLINE postscanl' #-}
-postscanl' = G.postscanl'
 
+
+{-
 -- | /O(n)/ Haskell-style scan
 --
 -- > scanl f z <x1,...,xn> = <y1,...,y(n+1)>
