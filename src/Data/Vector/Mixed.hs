@@ -81,7 +81,7 @@ module Data.Vector.Mixed
   -- ** Zipping
   , zipWith, zipWith3, zipWith4, zipWith5, zipWith6
   , izipWith, izipWith3, izipWith4, izipWith5, izipWith6
-  , zip {-, zip3, zip4, zip5, zip6
+  , zip, zip3, zip4, zip5, zip6
 
   -- ** Monadic zipping
   , zipWithM, zipWithM_
@@ -95,6 +95,7 @@ module Data.Vector.Mixed
   , filter, ifilter, filterM
   , takeWhile, dropWhile
 
+{-
   -- ** Partitioning
   , partition, unstablePartition, span, break
 
@@ -151,7 +152,7 @@ import           Data.Vector.Fusion.Stream (MStream, Stream)
 import qualified Data.Vector.Fusion.Stream.Monadic as MStream
 
 -- import Control.DeepSeq ( NFData, rnf )
--- import Control.Monad ( liftM )
+import Control.Monad ( liftM )
 import Control.Monad.ST ( ST )
 -- import Control.Monad.Primitive
 
@@ -878,104 +879,119 @@ izipWith6 k a b c d e f = box (G.unstream (Stream.zipWith6 (uncurry k) (Stream.i
 {-# INLINE izipWith6 #-}
 
 -- | Elementwise pairing of array elements.
-zip :: (G.Vector v a, G.Vector v' b) => v a -> v' b -> Vector (a, b)
--- zip a b = mix (H.V a b) -- we need to trim appropriately
+zip :: (G.Vector va a, G.Vector vb b)
+    => va a -> vb b -> Vector (a, b)
+-- zip a b = mix (H.V a b) -- we would need to trim appropriately, and this would likely interfere with streaming. TODO: fix up and benchmark?
 zip = zipWith (,)
 {-# INLINE zip #-}
 
-{-
 -- | zip together three vectors into a vector of triples
-zip3 :: Vector a -> Vector b -> Vector c -> Vector (a, b, c)
-zip3 = G.zip3
+zip3 :: (G.Vector va a, G.Vector vb b, G.Vector vc c)
+     => va  a -> vb b -> vc c -> Vector (a, b, c)
+zip3 = zipWith3 (,,)
 {-# INLINE zip3 #-}
 
-zip4 :: Vector a -> Vector b -> Vector c -> Vector d
-     -> Vector (a, b, c, d)
-zip4 = G.zip4
+zip4 :: (G.Vector va a, G.Vector vb b, G.Vector vc c, G.Vector vd d)
+     => va a -> vb b -> vc c -> vd d -> Vector (a, b, c, d)
+zip4 = zipWith4 (,,,)
 {-# INLINE zip4 #-}
 
-zip5 :: Vector a -> Vector b -> Vector c -> Vector d -> Vector e
-     -> Vector (a, b, c, d, e)
-zip5 = G.zip5
+zip5 :: (G.Vector va a, G.Vector vb b, G.Vector vc c, G.Vector vd d, G.Vector ve e)
+     => va a -> vb b -> vc c -> vd d -> ve e -> Vector (a, b, c, d, e)
+zip5 = zipWith5 (,,,,)
 {-# INLINE zip5 #-}
 
-zip6 :: Vector a -> Vector b -> Vector c -> Vector d -> Vector e -> Vector f
-     -> Vector (a, b, c, d, e, f)
-zip6 = G.zip6
+zip6 :: (G.Vector va a, G.Vector vb b, G.Vector vc c, G.Vector vd d, G.Vector ve e, G.Vector vf f)
+     => va a -> vb b -> vc c -> vd d -> ve e -> vf f -> Vector (a, b, c, d, e, f)
+zip6 = zipWith6 (,,,,,)
 {-# INLINE zip6 #-}
 
 -- Unzipping
 -- ---------
 
 -- | /O(min(m,n))/ Unzip a vector of pairs.
-unzip :: Vector (a, b) -> (Vector a, Vector b)
+unzip :: G.Vector v (a, b) => v (a, b) -> (Vector a, Vector b)
+unzip v = (map fst v, map snd v)
 {-# INLINE unzip #-}
-unzip = G.unzip
 
-unzip3 :: Vector (a, b, c) -> (Vector a, Vector b, Vector c)
+unzip3 :: G.Vector v (a, b, c) => v (a, b, c) -> (Vector a, Vector b, Vector c)
+unzip3 xs = (map (\(a, _, _) -> a) xs,
+             map (\(_, b, _) -> b) xs,
+             map (\(_, _, c) -> c) xs)
 {-# INLINE unzip3 #-}
-unzip3 = G.unzip3
 
-unzip4 :: Vector (a, b, c, d) -> (Vector a, Vector b, Vector c, Vector d)
+unzip4 :: G.Vector v (a, b, c, d) => v (a, b, c, d) -> (Vector a, Vector b, Vector c, Vector d)
+unzip4 xs = (map (\(a, _, _, _) -> a) xs,
+             map (\(_, b, _, _) -> b) xs,
+             map (\(_, _, c, _) -> c) xs,
+             map (\(_, _, _, d) -> d) xs)
 {-# INLINE unzip4 #-}
-unzip4 = G.unzip4
 
-unzip5 :: Vector (a, b, c, d, e)
-       -> (Vector a, Vector b, Vector c, Vector d, Vector e)
+unzip5 :: G.Vector v (a, b, c, d, e) => v (a, b, c, d, e) -> (Vector a, Vector b, Vector c, Vector d, Vector e)
+unzip5 xs = (map (\(a, _, _, _, _) -> a) xs,
+             map (\(_, b, _, _, _) -> b) xs,
+             map (\(_, _, c, _, _) -> c) xs,
+             map (\(_, _, _, d, _) -> d) xs,
+             map (\(_, _, _, _, e) -> e) xs)
 {-# INLINE unzip5 #-}
-unzip5 = G.unzip5
 
-unzip6 :: Vector (a, b, c, d, e, f)
-       -> (Vector a, Vector b, Vector c, Vector d, Vector e, Vector f)
+unzip6 :: G.Vector v (a, b, c, d, e, f) => v (a, b, c, d, e, f) -> (Vector a, Vector b, Vector c, Vector d, Vector e, Vector f)
+unzip6 xs = (map (\(a, _, _, _, _, _) -> a) xs,
+             map (\(_, b, _, _, _, _) -> b) xs,
+             map (\(_, _, c, _, _, _) -> c) xs,
+             map (\(_, _, _, d, _, _) -> d) xs,
+             map (\(_, _, _, _, e, _) -> e) xs,
+             map (\(_, _, _, _, _, f) -> f) xs)
 {-# INLINE unzip6 #-}
-unzip6 = G.unzip6
 
 -- Monadic zipping
 -- ---------------
 
 -- | /O(min(m,n))/ Zip the two vectors with the monadic action and yield a
 -- vector of results
-zipWithM :: Monad m => (a -> b -> m c) -> Vector a -> Vector b -> m (Vector c)
+zipWithM :: (Monad m, G.Vector va a, G.Vector vb b) => (a -> b -> m c) -> va a -> vb b -> m (Vector c)
+zipWithM f as bs = unstreamM $ Stream.zipWithM f (G.stream as) (G.stream bs)
 {-# INLINE zipWithM #-}
-zipWithM = G.zipWithM
+
 
 -- | /O(min(m,n))/ Zip the two vectors with the monadic action and ignore the
 -- results
-zipWithM_ :: Monad m => (a -> b -> m c) -> Vector a -> Vector b -> m ()
+zipWithM_ :: (Monad m, G.Vector va a, G.Vector vb b) => (a -> b -> m c) -> va a -> vb b -> m ()
+zipWithM_ f as bs = Stream.zipWithM_ f (G.stream as) (G.stream bs)
 {-# INLINE zipWithM_ #-}
-zipWithM_ = G.zipWithM_
 
 -- Filtering
 -- ---------
 
 -- | /O(n)/ Drop elements that do not satisfy the predicate
-filter :: (a -> Bool) -> Vector a -> Vector a
+filter :: Mixed u v a => (a -> Bool) -> v a -> Vector a
 {-# INLINE filter #-}
-filter = G.filter
+filter f = mix . G.filter f
 
 -- | /O(n)/ Drop elements that do not satisfy the predicate which is applied to
 -- values and their indices
-ifilter :: (Int -> a -> Bool) -> Vector a -> Vector a
+ifilter :: Mixed u v a => (Int -> a -> Bool) -> v a -> Vector a
+ifilter f = mix . G.ifilter f
 {-# INLINE ifilter #-}
-ifilter = G.ifilter
 
 -- | /O(n)/ Drop elements that do not satisfy the monadic predicate
-filterM :: Monad m => (a -> m Bool) -> Vector a -> m (Vector a)
+filterM :: (Monad m, Mixed u v a) => (a -> m Bool) -> v a -> m (Vector a)
+filterM f = liftM mix . G.filterM f
 {-# INLINE filterM #-}
-filterM = G.filterM
 
 -- | /O(n)/ Yield the longest prefix of elements satisfying the predicate
 -- without copying.
-takeWhile :: (a -> Bool) -> Vector a -> Vector a
+takeWhile :: Mixed u v a => (a -> Bool) -> v a -> Vector a
+takeWhile f = mix . G.takeWhile f
 {-# INLINE takeWhile #-}
-takeWhile = G.takeWhile
 
 -- | /O(n)/ Drop the longest prefix of elements that satisfy the predicate
 -- without copying.
-dropWhile :: (a -> Bool) -> Vector a -> Vector a
+dropWhile :: Mixed u v a => (a -> Bool) -> v a -> Vector a
+dropWhile f = mix . G.dropWhile f
 {-# INLINE dropWhile #-}
-dropWhile = G.dropWhile
 
+{-
 -- Parititioning
 -- -------------
 
@@ -1433,10 +1449,10 @@ copy = G.copy
 
 
 unstreamM :: (Monad m, G.Vector v a) => MStream m a -> m (v a)
-{-# INLINE [1] unstreamM #-}
 unstreamM s = do
-                xs <- MStream.toList s
-                return $ G.unstream $ Stream.unsafeFromList (MStream.size s) xs
+  xs <- MStream.toList s
+  return $ G.unstream $ Stream.unsafeFromList (MStream.size s) xs
+{-# INLINE [1] unstreamM #-}
 
 -- We have to make sure that this is strict in the stream but we can't seq on
 -- it while fusion is happening. Hence this ugliness.
