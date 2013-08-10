@@ -54,11 +54,11 @@ module Data.Vector.Mixed
   , (//), update, update_
   , unsafeUpd, unsafeUpdate, unsafeUpdate_
 
-{-
   -- ** Accumulations
   , accum, accumulate, accumulate_
   , unsafeAccum, unsafeAccumulate, unsafeAccumulate_
 
+{-
   -- ** Permutations
   , reverse, backpermute, unsafeBackpermute
 
@@ -589,7 +589,6 @@ unsafeUpdate_ :: ( Mixed u v a, Mixed u' v' Int, Mixed u'' v'' a
 unsafeUpdate_ a b c = G.unsafeUpdate_ (mix a) (mix b) (mix c)
 {-# INLINE unsafeUpdate_ #-}
 
-{-
 -- Accumulations
 -- -------------
 
@@ -597,23 +596,24 @@ unsafeUpdate_ a b c = G.unsafeUpdate_ (mix a) (mix b) (mix c)
 -- @a@ at position @i@ by @f a b@.
 --
 -- > accum (+) <5,9,2> [(2,4),(1,6),(0,3),(1,7)] = <5+3, 9+6+7, 2+4>
-accum :: (a -> b -> a) -- ^ accumulating function @f@
-      -> Vector a      -- ^ initial vector (of length @m@)
+accum :: Mixed u v a => (a -> b -> a) -- ^ accumulating function @f@
+      -> v a      -- ^ initial vector (of length @m@)
       -> [(Int,b)]     -- ^ list of index/value pairs (of length @n@)
       -> Vector a
+accum f m = G.accum f (mix m)
 {-# INLINE accum #-}
-accum = G.accum
 
 -- | /O(m+n)/ For each pair @(i,b)@ from the vector of pairs, replace the vector
 -- element @a@ at position @i@ by @f a b@.
 --
 -- > accumulate (+) <5,9,2> <(2,4),(1,6),(0,3),(1,7)> = <5+3, 9+6+7, 2+4>
-accumulate :: (a -> b -> a)  -- ^ accumulating function @f@
-            -> Vector a       -- ^ initial vector (of length @m@)
-            -> Vector (Int,b) -- ^ vector of index/value pairs (of length @n@)
-            -> Vector a
+accumulate :: (Mixed u v a, Mixed u' v' (Int, b))
+           => (a -> b -> a)  -- ^ accumulating function @f@
+           -> v a       -- ^ initial vector (of length @m@)
+           -> v' (Int,b) -- ^ vector of index/value pairs (of length @n@)
+           -> Vector a
+accumulate f m n = G.accumulate f (mix m) (mix n)
 {-# INLINE accumulate #-}
-accumulate = G.accumulate
 
 -- | /O(m+min(n1,n2))/ For each index @i@ from the index vector and the
 -- corresponding value @b@ from the the value vector,
@@ -628,30 +628,34 @@ accumulate = G.accumulate
 -- @
 -- accumulate_ f as is bs = 'accumulate' f as ('zip' is bs)
 -- @
-accumulate_ :: (a -> b -> a) -- ^ accumulating function @f@
-            -> Vector a      -- ^ initial vector (of length @m@)
-            -> Vector Int    -- ^ index vector (of length @n1@)
-            -> Vector b      -- ^ value vector (of length @n2@)
-            -> Vector a
+accumulate_
+  :: (Mixed u v a, Mixed u' v' Int, Mixed u'' v'' b)
+  => (a -> b -> a) -- ^ accumulating function @f@
+  -> v a      -- ^ initial vector (of length @m@)
+  -> v' Int    -- ^ index vector (of length @n1@)
+  -> v'' b      -- ^ value vector (of length @n2@)
+  -> Vector a
+accumulate_ f a b c = G.accumulate_ f (mix a) (mix b) (mix c)
 {-# INLINE accumulate_ #-}
-accumulate_ = G.accumulate_
 
 -- | Same as 'accum' but without bounds checking.
-unsafeAccum :: (a -> b -> a) -> Vector a -> [(Int,b)] -> Vector a
+unsafeAccum :: Mixed u v a => (a -> b -> a) -> v a -> [(Int,b)] -> Vector a
+unsafeAccum f m = G.unsafeAccum f (mix m)
 {-# INLINE unsafeAccum #-}
-unsafeAccum = G.unsafeAccum
 
 -- | Same as 'accumulate' but without bounds checking.
-unsafeAccumulate :: (a -> b -> a) -> Vector a -> Vector (Int,b) -> Vector a
+unsafeAccumulate :: (Mixed u v a, Mixed u' v' (Int, b)) => (a -> b -> a) -> Vector a -> Vector (Int,b) -> Vector a
+unsafeAccumulate f m n = G.unsafeAccumulate f (mix m) (mix n)
 {-# INLINE unsafeAccumulate #-}
-unsafeAccumulate = G.unsafeAccumulate
 
 -- | Same as 'accumulate_' but without bounds checking.
 unsafeAccumulate_
-  :: (a -> b -> a) -> Vector a -> Vector Int -> Vector b -> Vector a
+  :: (Mixed u v a, Mixed u' v' Int, Mixed u'' v'' b)
+  => (a -> b -> a) -> v a -> v' Int -> v'' b -> Vector a
+unsafeAccumulate_ f a b c = G.unsafeAccumulate_ f (mix a) (mix b) (mix c)
 {-# INLINE unsafeAccumulate_ #-}
-unsafeAccumulate_ = G.unsafeAccumulate_
 
+{-
 -- Permutations
 -- ------------
 
