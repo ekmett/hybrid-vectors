@@ -36,6 +36,7 @@ library
     Data.Vector.Hybrid.Internal
     Data.Vector.Hybrid.Mutable
     Data.Vector.Mixed.Internal
+    Data.Vector.Mixed.Mutable
 
   ghc-options: -Wall -O2
 

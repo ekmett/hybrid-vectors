@@ -24,13 +24,14 @@ module Data.Vector.Mixed.Mutable
   , length, null
 
   -- ** Extracting subvectors
-  , slice, init, tail, take, drop
+  , slice, init, tail, take, drop, splitAt
   , unsafeSlice, unsafeInit, unsafeTail, unsafeTake, unsafeDrop
 
   -- ** Overlapping
   , overlaps
 
   -- * Construction
+  , replicateM, move, unsafeMove
 
   -- ** Initialisation
   , new, unsafeNew, replicate, clone
@@ -55,7 +56,7 @@ module Data.Vector.Mixed.Mutable
 import Control.Monad.Primitive
 import qualified Data.Vector.Generic.Mutable as G
 import Data.Vector.Mixed.Internal
-import Prelude hiding ( length, null, replicate, reverse, map, read, take, drop, init, tail )
+import Prelude hiding ( length, null, replicate, reverse, map, read, take, drop, init, tail, splitAt )
 
 type IOVector = MVector RealWorld
 
