@@ -659,28 +659,31 @@ accumulate_
 accumulate_ f v is xs = mix (accum_stream f v (Stream.zipWith (,) (G.stream is) (G.stream xs)))
 {-# INLINE accumulate_ #-}
 
-
 accum_stream :: G.Vector v a => (a -> b -> a) -> v a -> Stream (Int,b) -> v a
-{-# INLINE accum_stream #-}
 accum_stream f = modifyWithStream (GM.accum f)
-
+{-# INLINE accum_stream #-}
 
 -- | Same as 'accum' but without bounds checking.
 unsafeAccum :: Mixed u v a => (a -> b -> a) -> v a -> [(Int,b)] -> Vector a
-unsafeAccum f m xs = mix (G.unsafeAccum f m xs)
+unsafeAccum f v us = mix (unsafeAccum_stream f v (Stream.fromList us))
+
 {-# INLINE unsafeAccum #-}
 
 -- | Same as 'accumulate' but without bounds checking.
-unsafeAccumulate :: (Mixed u v a, Mixed u' v' (Int, b)) => (a -> b -> a) -> v a -> v' (Int,b) -> Vector a
-unsafeAccumulate f m n = G.unsafeAccumulate f (mix m) (mix n)
+unsafeAccumulate :: (Mixed u v a, G.Vector v' (Int, b)) => (a -> b -> a) -> v a -> v' (Int,b) -> Vector a
+unsafeAccumulate f v us = mix (unsafeAccum_stream f v (G.stream us))
 {-# INLINE unsafeAccumulate #-}
 
 -- | Same as 'accumulate_' but without bounds checking.
 unsafeAccumulate_
-  :: (Mixed u v a, Mixed u' v' Int, Mixed u'' v'' b)
+  :: (Mixed u v a, G.Vector v' Int, G.Vector v'' b)
   => (a -> b -> a) -> v a -> v' Int -> v'' b -> Vector a
-unsafeAccumulate_ f a b c = G.unsafeAccumulate_ f (mix a) (mix b) (mix c)
+unsafeAccumulate_ f v is xs = mix (unsafeAccum_stream f v (Stream.zipWith (,) (G.stream is) (G.stream xs)))
 {-# INLINE unsafeAccumulate_ #-}
+
+unsafeAccum_stream :: G.Vector v a => (a -> b -> a) -> v a -> Stream (Int,b) -> v a
+unsafeAccum_stream f = modifyWithStream (GM.unsafeAccum f)
+{-# INLINE unsafeAccum_stream #-}
 
 -- Permutations
 -- ------------
