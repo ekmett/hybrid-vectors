@@ -243,15 +243,18 @@ instance Alternative Vector where
   {-# INLINE (<|>) #-}
 
 instance Foldable Vector where
-  {-# INLINE foldr #-}
   foldr = G.foldr
+  {-# INLINE foldr #-}
 
-  {-# INLINE foldl #-}
   foldl = G.foldl
+  {-# INLINE foldl #-}
 
-  {-# INLINE foldr1 #-}
   foldr1 = G.foldr1
+  {-# INLINE foldr1 #-}
 
-  {-# INLINE foldl1 #-}
   foldl1 = G.foldl1
+  {-# INLINE foldl1 #-}
 
+instance Traversable Vector where
+  traverse f v = G.fromListN (G.length v) <$> traverse f (G.toList v)
+  {-# INLINE traverse #-}
