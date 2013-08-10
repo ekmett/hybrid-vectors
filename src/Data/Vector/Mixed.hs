@@ -1,9 +1,12 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE BangPatterns #-}
+
+
 module Data.Vector.Mixed
   (
   -- * Mixed vectors
@@ -137,12 +140,16 @@ module Data.Vector.Mixed
 -}
   ) where
 
+
 import qualified Data.Vector.Generic as G
 import Data.Vector.Mixed.Internal
--- import qualified Data.Vector.Fusion.Stream as Stream
+import Data.Vector.Internal.Check as Ck
+import qualified Data.Vector.Fusion.Stream as Stream
+import           Data.Vector.Fusion.Stream (MStream)
+import qualified Data.Vector.Fusion.Stream.Monadic as MStream
 
 -- import Control.DeepSeq ( NFData, rnf )
-import Control.Monad ( liftM )
+-- import Control.Monad ( liftM )
 import Control.Monad.ST ( ST )
 -- import Control.Monad.Primitive
 
@@ -161,6 +168,9 @@ import Prelude hiding ( length, null,
                         mapM, mapM_, sequence, sequence_ )
 
 import qualified Prelude
+
+#define BOUNDS_CHECK(f) (Ck.f __FILE__ __LINE__ Ck.Bounds)
+#define UNSAFE_CHECK(f) (Ck.f __FILE__ __LINE__ Ck.Unsafe)
 
 -- import Data.Typeable ( Typeable )
 -- import Data.Data     ( Data(..) )
@@ -645,7 +655,7 @@ unsafeAccum f m xs = mix (G.unsafeAccum f m xs)
 {-# INLINE unsafeAccum #-}
 
 -- | Same as 'accumulate' but without bounds checking.
-unsafeAccumulate :: (Mixed u v a, Mixed u' v' (Int, b)) => (a -> b -> a) -> Vector a -> Vector (Int,b) -> Vector a
+unsafeAccumulate :: (Mixed u v a, Mixed u' v' (Int, b)) => (a -> b -> a) -> v a -> v' (Int,b) -> Vector a
 unsafeAccumulate f m n = G.unsafeAccumulate f (mix m) (mix n)
 {-# INLINE unsafeAccumulate #-}
 
@@ -669,13 +679,49 @@ reverse m = mix (G.reverse m)
 -- often much more efficient.
 --
 -- > backpermute <a,b,c,d> <0,3,2,3,1,0> = <a,d,c,d,b,a>
-backpermute :: (Mixed u v a, Mixed u' v' Int) => v a -> v' Int -> Vector a
-backpermute m n = G.backpermute (mix m) (mix n)
-{-# INLINE backpermute #-}
+backpermute :: (Mixed u v a, G.Vector v' Int) => v a -> v' Int -> Vector a
+-- backpermute m n = G.backpermute (mix m) (mix n)
+-- {-# INLINE backpermute #-}
+
+-- This somewhat non-intuitive definition ensures that the resulting vector
+-- does not retain references to the original one even if it is lazy in its
+-- elements. This would not be the case if we simply used map (v!)
+backpermute v is = mix
+                 $ (`asTypeOf` v)
+                 $ seq v
+                 $ seq n
+                 $ G.unstream
+                 $ Stream.unbox
+                 $ Stream.map index
+                 $ G.stream is
+  where
+    n = length v
+
+    {-# INLINE index #-}
+    -- NOTE: we do it this way to avoid triggering LiberateCase on n in
+    -- polymorphic code
+    index i = BOUNDS_CHECK(checkIndex) "backpermute" i n
+            $ G.basicUnsafeIndexM v i
 
 -- | Same as 'backpermute' but without bounds checking.
-unsafeBackpermute :: (Mixed u v a, Mixed u' v' Int) => v a -> v' Int -> Vector a
-unsafeBackpermute m n = G.unsafeBackpermute (mix m) (mix n)
+unsafeBackpermute :: (Mixed u v a, G.Vector v' Int) => v a -> v' Int -> Vector a
+unsafeBackpermute v is = mix
+                       $ (`asTypeOf` v)
+                       $ seq v
+                       $ seq n
+                       $ G.unstream
+                       $ Stream.unbox
+                       $ Stream.map index
+                       $ G.stream is
+  where
+    n = length v
+
+    {-# INLINE index #-}
+    -- NOTE: we do it this way to avoid triggering LiberateCase on n in
+    -- polymorphic code
+    index i = UNSAFE_CHECK(checkIndex) "unsafeBackpermute" i n
+            $ G.basicUnsafeIndexM v i
+
 {-# INLINE unsafeBackpermute #-}
 
 -- Safe destructive updates
@@ -704,18 +750,21 @@ indexed m = mix (G.indexed m)
 -- -------
 
 -- | /O(n)/ Map a function over a vector
-map :: (G.Vector v a, Mixed u v b) => (a -> b) -> v a -> Vector b
-map f m = mix (G.map f m)
+map :: G.Vector v a => (a -> b) -> v a -> Vector b
+map f = box . G.unstream . Stream.inplace (MStream.map f) . G.stream
+
+
 {-# INLINE map #-}
 
 -- | /O(n)/ Apply a function to every element of a vector and its index
-imap :: (G.Vector v a, Mixed u v b) => (Int -> a -> b) -> v a -> Vector b
-imap f m = mix (G.imap f m)
+imap :: G.Vector v a => (Int -> a -> b) -> v a -> Vector b
+-- imap f m = mix (G.imap f m)
+imap f = box . G.unstream . Stream.inplace (MStream.map (uncurry f) . MStream.indexed) . G.stream
 {-# INLINE imap #-}
 
 -- | Map a function over a vector and concatenate the results.
-concatMap :: (Mixed u v b, Mixed u' v' a) => (a -> v b) -> v' a -> Vector b
-concatMap f m = G.concatMap (mix . f) (mix m)
+concatMap :: (Mixed u v b, G.Vector v' a) => (a -> v b) -> v' a -> Vector b
+concatMap f = mix . G.concat . Stream.toList . Stream.map f . G.stream
 {-# INLINE concatMap #-}
 
 -- Monadic mapping
@@ -723,88 +772,92 @@ concatMap f m = G.concatMap (mix . f) (mix m)
 
 -- | /O(n)/ Apply the monadic action to all elements of the vector, yielding a
 -- vector of results
-mapM :: (Monad m, G.Vector v a, Mixed u v b) => (a -> m b) -> v a -> m (Vector b)
-mapM f m = liftM mix (G.mapM f m)
+mapM :: (Monad m, G.Vector v a) => (a -> m b) -> v a -> m (Vector b)
+mapM f = unstreamM . Stream.mapM f . G.stream
 {-# INLINE mapM #-}
 
 -- | /O(n)/ Apply the monadic action to all elements of a vector and ignore the
 -- results
 mapM_ :: (Monad m, G.Vector v a) => (a -> m b) -> v a -> m ()
-mapM_ f m = G.mapM_ f m
+mapM_ f = Stream.mapM_ f . G.stream
 {-# INLINE mapM_ #-}
 
 -- | /O(n)/ Apply the monadic action to all elements of the vector, yielding a
 -- vector of results. Equvalent to @flip 'mapM'@.
-forM :: (Monad m, G.Vector v a, Mixed u v b) => v a -> (a -> m b) -> m (Vector b)
-forM m f = liftM mix (G.forM m f)
+forM :: (Monad m, G.Vector v a) => v a -> (a -> m b) -> m (Vector b)
+forM as f = mapM f as
 {-# INLINE forM #-}
 
 -- | /O(n)/ Apply the monadic action to all elements of a vector and ignore the
 -- results. Equivalent to @flip 'mapM_'@.
 forM_ :: (Monad m, G.Vector v a) => v a -> (a -> m b) -> m ()
-forM_ = G.forM_
+forM_ as f = mapM_ f as
 {-# INLINE forM_ #-}
-
 
 -- Zipping
 -- -------
 
 -- | /O(min(m,n))/ Zip two vectors with the given function.
-zipWith :: (Mixed ua va a, Mixed ub vb b, Mixed uc vc c)
+zipWith :: (G.Vector va a, G.Vector vb b)
         => (a -> b -> c) -> va a -> vb b -> Vector c
-zipWith k a b = G.zipWith k (mix a) (mix b)
+zipWith k a b = box (G.unstream (Stream.zipWith k (G.stream a) (G.stream b)))
 {-# INLINE zipWith #-}
 
 -- | Zip three vectors with the given function.
-zipWith3 :: (Mixed ua va a, Mixed ub vb b, Mixed uc vc c, Mixed ud vd d)
+zipWith3 :: (G.Vector va a, G.Vector vb b, G.Vector vc c)
          => (a -> b -> c -> d) -> va a -> vb b -> vc c -> Vector d
-zipWith3 k a b c = G.zipWith3 k (mix a) (mix b) (mix c)
+zipWith3 k a b c = box (G.unstream (Stream.zipWith3 k (G.stream a) (G.stream b) (G.stream c)))
 {-# INLINE zipWith3 #-}
 
-zipWith4 :: (Mixed ua va a, Mixed ub vb b, Mixed uc vc c, Mixed ud vd d, Mixed ue ve e)
+zipWith4 :: (Mixed ua va a, Mixed ub vb b, Mixed uc vc c, Mixed ud vd d)
          => (a -> b -> c -> d -> e) -> va a -> vb b -> vc c -> vd d -> Vector e
-zipWith4 k a b c d = G.zipWith4 k (mix a) (mix b) (mix c) (mix d)
+zipWith4 k a b c d = box (G.unstream (Stream.zipWith4 k (G.stream a) (G.stream b) (G.stream c) (G.stream d)))
 {-# INLINE zipWith4 #-}
 
-zipWith5 :: (Mixed ua va a, Mixed ub vb b, Mixed uc vc c, Mixed ud vd d, Mixed ue ve e, Mixed uf vf f)
+zipWith5 :: (Mixed ua va a, Mixed ub vb b, Mixed uc vc c, Mixed ud vd d, Mixed ue ve e)
          => (a -> b -> c -> d -> e -> f) -> va a -> vb b -> vc c -> vd d -> ve e -> Vector f
-zipWith5 k a b c d e = G.zipWith5 k (mix a) (mix b) (mix c) (mix d) (mix e)
+zipWith5 k a b c d e = box (G.unstream (Stream.zipWith5 k (G.stream a) (G.stream b) (G.stream c) (G.stream d) (G.stream e)))
 {-# INLINE zipWith5 #-}
 
-zipWith6 :: (Mixed ua va a, Mixed ub vb b, Mixed uc vc c, Mixed ud vd d, Mixed ue ve e, Mixed uf vf f, Mixed ug vg g)
+zipWith6 :: (Mixed ua va a, Mixed ub vb b, Mixed uc vc c, Mixed ud vd d, Mixed ue ve e, Mixed uf vf f)
          => (a -> b -> c -> d -> e -> f -> g) -> va a -> vb b -> vc c -> vd d -> ve e -> vf f -> Vector g
-zipWith6 k a b c d e f = G.zipWith6 k (mix a) (mix b) (mix c) (mix d) (mix e) (mix f)
+zipWith6 k a b c d e f = box (G.unstream (Stream.zipWith6 k (G.stream a) (G.stream b) (G.stream c) (G.stream d) (G.stream e) (G.stream f)))
 {-# INLINE zipWith6 #-}
 
 
 -- | /O(min(m,n))/ Zip two vectors with a function that also takes the
 -- elements' indices.
 
-izipWith :: (Mixed ua va a, Mixed ub vb b, Mixed uc vc c)
+izipWith :: (G.Vector va a, G.Vector vb b)
         => (Int -> a -> b -> c) -> va a -> vb b -> Vector c
-izipWith k a b = G.izipWith k (mix a) (mix b)
+izipWith f xs ys = box $ G.unstream $
+   Stream.zipWith (uncurry f) (Stream.indexed (G.stream xs)) (G.stream ys)
+
 {-# INLINE izipWith #-}
 
 -- | Zip three vectors and their indices with the given function.
-izipWith3 :: (Mixed ua va a, Mixed ub vb b, Mixed uc vc c, Mixed ud vd d)
+izipWith3 :: (G.Vector va a, G.Vector vb b, G.Vector vc c)
          => (Int -> a -> b -> c -> d) -> va a -> vb b -> vc c -> Vector d
-izipWith3 k a b c = G.izipWith3 k (mix a) (mix b) (mix c)
+izipWith3 f xs ys zs = box $ G.unstream $
+   Stream.zipWith3 (uncurry f) (Stream.indexed (G.stream xs)) (G.stream ys) (G.stream zs)
 {-# INLINE izipWith3 #-}
 
-izipWith4 :: (Mixed ua va a, Mixed ub vb b, Mixed uc vc c, Mixed ud vd d, Mixed ue ve e)
+izipWith4 :: (Mixed ua va a, Mixed ub vb b, Mixed uc vc c, Mixed ud vd d)
          => (Int -> a -> b -> c -> d -> e) -> va a -> vb b -> vc c -> vd d -> Vector e
-izipWith4 k a b c d = G.izipWith4 k (mix a) (mix b) (mix c) (mix d)
+izipWith4 f xs ys zs ws = box $ G.unstream $
+   Stream.zipWith4 (uncurry f) (Stream.indexed (G.stream xs)) (G.stream ys) (G.stream zs) (G.stream ws)
 {-# INLINE izipWith4 #-}
 
-izipWith5 :: (Mixed ua va a, Mixed ub vb b, Mixed uc vc c, Mixed ud vd d, Mixed ue ve e, Mixed uf vf f)
+izipWith5 :: (Mixed ua va a, Mixed ub vb b, Mixed uc vc c, Mixed ud vd d, Mixed ue ve e)
          => (Int -> a -> b -> c -> d -> e -> f) -> va a -> vb b -> vc c -> vd d -> ve e -> Vector f
-izipWith5 k a b c d e = G.izipWith5 k (mix a) (mix b) (mix c) (mix d) (mix e)
+izipWith5 k a b c d e = box (G.unstream (Stream.zipWith5 (uncurry k) (Stream.indexed (G.stream a)) (G.stream b) (G.stream c) (G.stream d) (G.stream e)))
 {-# INLINE izipWith5 #-}
 
-izipWith6 :: (Mixed ua va a, Mixed ub vb b, Mixed uc vc c, Mixed ud vd d, Mixed ue ve e, Mixed uf vf f, Mixed ug vg g)
+izipWith6 :: (Mixed ua va a, Mixed ub vb b, Mixed uc vc c, Mixed ud vd d, Mixed ue ve e, Mixed uf vf f)
          => (Int -> a -> b -> c -> d -> e -> f -> g) -> va a -> vb b -> vc c -> vd d -> ve e -> vf f -> Vector g
-izipWith6 k a b c d e f = G.izipWith6 k (mix a) (mix b) (mix c) (mix d) (mix e) (mix f)
+izipWith6 k a b c d e f = box (G.unstream (Stream.zipWith6 (uncurry k) (Stream.indexed (G.stream a)) (G.stream b) (G.stream c) (G.stream d) (G.stream e) (G.stream f)))
 {-# INLINE izipWith6 #-}
+
 
 {-
 -- | Elementwise pairing of array elements.
@@ -1358,3 +1411,10 @@ copy :: PrimMonad m => MVector (PrimState m) a -> Vector a -> m ()
 {-# INLINE copy #-}
 copy = G.copy
 -}
+
+
+unstreamM :: (Monad m, G.Vector v a) => MStream m a -> m (v a)
+{-# INLINE [1] unstreamM #-}
+unstreamM s = do
+                xs <- MStream.toList s
+                return $ G.unstream $ Stream.unsafeFromList (MStream.size s) xs
