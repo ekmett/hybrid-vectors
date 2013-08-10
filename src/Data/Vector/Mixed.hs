@@ -5,8 +5,21 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE BangPatterns #-}
-
-
+-----------------------------------------------------------------------------
+-- |
+-- Copyright   :  (C) 2013 Edward Kmett,
+-- License     :  BSD-style (see the file LICENSE)
+--
+-- Maintainer  :  Edward Kmett <ekmett@gmail.com>
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+-- A mixed 'Vector' lets you make a 'Vector' out of any other vector type
+-- you have lying around, and all of the combinators are defined to allow
+-- you to freely mix input vector type wherever possible.
+--
+-- This enables you to work with a mixture of boxed and unboxed data.
+-----------------------------------------------------------------------------
 module Data.Vector.Mixed
   (
   -- * Mixed vectors
