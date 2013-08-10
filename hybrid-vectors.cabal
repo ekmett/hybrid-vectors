@@ -1,6 +1,6 @@
 name:          hybrid-vectors
 category:      Data, Vector
-version:       0.1
+version:       0.1.1
 license:       BSD3
 cabal-version: >= 1.6
 license-file:  LICENSE
@@ -17,7 +17,7 @@ extra-source-files:
   .travis.yml
   .gitignore
   .vim.custom
-description:
+description: Hybrid vectors e.g. Mixed Boxed/Unboxed vectors
 
 source-repository head
   type: git
