@@ -19,9 +19,9 @@
 #endif
 
 module Data.Vector.Mixed.Internal
-  ( MVector(..), mmix, mbox
-  , Vector(..), mix, box
-  , Mixed
+  ( MVector(..), mbox
+  , Vector(..), box
+  , Mixed(..)
   ) where
 
 import Control.Applicative
@@ -51,27 +51,29 @@ class
   , mv ~ G.Mutable v
   , GM.MVector mv a
   , G.Vector v a
-  ) => Mixed mv v a | mv -> v, v -> mv
+  ) => Mixed mv v a | mv -> v, v -> mv where
+
+  mmix :: mv s a -> MVector s a
+  mmix = MV
+
+  mix :: v a -> Vector a
+  mix = V
 
 instance                 Mixed B.MVector B.Vector a
 instance S.Storable a => Mixed S.MVector S.Vector a
 instance P.Prim a     => Mixed P.MVector P.Vector a
 instance U.Unbox a    => Mixed U.MVector U.Vector a
+instance Mixed MVector Vector a where
+  mmix = id -- don't nest!
+  mix = id
 
 -- | A @MVector s a@ is mutable vector that could have any vector type underneath
 data MVector :: * -> * -> * where
   MV :: Mixed mv v a => !(mv s a) -> MVector s a
  deriving Typeable
 
-mmix :: Mixed mv v a => mv s a -> MVector s a
-mmix = MV
-
-mix :: Mixed mv v a => v a -> Vector a
-mix = V
-
 mbox :: BM.MVector s a -> MVector s a
 mbox = MV
-
 
 box :: B.Vector a -> Vector a
 box = V
