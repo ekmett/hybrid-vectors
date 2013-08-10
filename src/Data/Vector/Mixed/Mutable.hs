@@ -53,10 +53,11 @@ module Data.Vector.Mixed.Mutable
 
   ) where
 
+import Control.Monad (liftM)
 import Control.Monad.Primitive
 import qualified Data.Vector.Generic.Mutable as G
 import Data.Vector.Mixed.Internal
-import Prelude hiding ( length, null, replicate, reverse, map, read, take, drop, init, tail, splitAt )
+import Prelude hiding (length, null, replicate, reverse, map, read, take, drop, init, tail, splitAt)
 
 type IOVector = MVector RealWorld
 
@@ -80,27 +81,28 @@ null = G.null
 
 -- | Yield a part of the mutable vector without copying it.
 slice :: Mixed u v a => Int -> Int -> u s a -> MVector s a
-slice i j m = G.slice i j (mmix m)
+slice i j m = mmix (G.slice i j m)
 {-# INLINE slice #-}
 
 take :: Mixed u v a => Int -> u s a -> MVector s a
-take i m = G.take i (mmix m)
+take i m = mmix (G.take i m)
 {-# INLINE take #-}
 
 drop :: Mixed u v a => Int -> u s a -> MVector s a
-drop i m = G.drop i (mmix m)
+drop i m = mmix (G.drop i m)
 {-# INLINE drop #-}
 
 splitAt :: Mixed u v a => Int -> u s a -> (MVector s a, MVector s a)
-splitAt i m = G.splitAt i (mmix m)
+splitAt i m = case G.splitAt i m of
+  (l,r) -> (mmix l, mmix r)
 {-# INLINE splitAt #-}
 
 init :: Mixed u v a => u s a -> MVector s a
-init m = G.init (mmix m)
+init m = mmix (G.init m)
 {-# INLINE init #-}
 
 tail :: Mixed u v a => u s a -> MVector s a
-tail m = G.tail (mmix m)
+tail m = mmix (G.tail m)
 {-# INLINE tail #-}
 
 -- | Yield a part of the mutable vector without copying it. No bounds checks
@@ -109,23 +111,23 @@ unsafeSlice :: Mixed u v a => Int  -- ^ starting index
             -> Int  -- ^ length of the slice
             -> u s a
             -> MVector s a
-unsafeSlice i j m  = G.unsafeSlice i j (mmix m)
+unsafeSlice i j m  = mmix (G.unsafeSlice i j m)
 {-# INLINE unsafeSlice #-}
 
 unsafeTake :: Mixed u v a => Int -> u s a -> MVector s a
-unsafeTake i m = G.unsafeTake i (mmix m)
+unsafeTake i m = mmix (G.unsafeTake i m)
 {-# INLINE unsafeTake #-}
 
 unsafeDrop :: Mixed u v a => Int -> u s a -> MVector s a
-unsafeDrop i m = G.unsafeDrop i (mmix m)
+unsafeDrop i m = mmix (G.unsafeDrop i m)
 {-# INLINE unsafeDrop #-}
 
 unsafeInit :: Mixed u v a => u s a -> MVector s a
-unsafeInit m = G.unsafeInit (mmix m)
+unsafeInit m = mmix (G.unsafeInit m)
 {-# INLINE unsafeInit #-}
 
 unsafeTail :: Mixed u v a => u s a -> MVector s a
-unsafeTail m = G.unsafeTail (mmix m)
+unsafeTail m = mmix (G.unsafeTail m)
 {-# INLINE unsafeTail #-}
 
 -- Overlapping
@@ -146,24 +148,24 @@ new = G.new
 
 -- | Create a mutable vector of the given length. The length is not checked.
 unsafeNew :: PrimMonad m => Int -> m (MVector (PrimState m) a)
-unsafeNew = G.unsafeNew
+unsafeNew n = liftM mbox (G.unsafeNew n)
 {-# INLINE unsafeNew #-}
 
 -- | Create a mutable vector of the given length (0 if the length is negative)
 -- and fill it with an initial value.
 replicate :: PrimMonad m => Int -> a -> m (MVector (PrimState m) a)
-replicate = G.replicate
+replicate n a = liftM mbox (G.replicate n a)
 {-# INLINE replicate #-}
 
 -- | Create a mutable vector of the given length (0 if the length is negative)
 -- and fill it with values produced by repeatedly executing the monadic action.
 replicateM :: PrimMonad m => Int -> m a -> m (MVector (PrimState m) a)
-replicateM = G.replicateM
+replicateM n m = liftM mbox (G.replicateM n m)
 {-# INLINE replicateM #-}
 
 -- | Create a copy of a mutable vector.
 clone :: (PrimMonad m, Mixed u v a) => u (PrimState m) a -> m (MVector (PrimState m) a)
-clone m = G.clone (mmix m)
+clone m = liftM mmix (G.clone m)
 {-# INLINE clone #-}
 
 -- Growing
@@ -172,13 +174,13 @@ clone m = G.clone (mmix m)
 -- | Grow a vector by the given number of elements. The number must be
 -- positive.
 grow :: (PrimMonad m, Mixed u v a) => u (PrimState m) a -> Int -> m (MVector (PrimState m) a)
-grow m = G.grow (mmix m)
+grow m n = liftM mmix (G.grow m n)
 {-# INLINE grow #-}
 
 -- | Grow a vector by the given number of elements. The number must be
 -- positive but this is not checked.
 unsafeGrow :: (PrimMonad m, Mixed u v a) => u (PrimState m) a -> Int -> m (MVector (PrimState m) a)
-unsafeGrow m = G.unsafeGrow (mmix m)
+unsafeGrow m n = liftM mmix (G.unsafeGrow m n)
 {-# INLINE unsafeGrow #-}
 
 -- Restricting memory usage
@@ -235,7 +237,7 @@ set = G.set
 -- | Copy a vector. The two vectors must have the same length and may not
 -- overlap.
 copy :: (PrimMonad m, Mixed u v a, Mixed u' v' a) => u (PrimState m) a -> u' (PrimState m) a -> m ()
-copy m n = G.copy (mmix m) (mmix n)
+copy dst src = G.copy (mmix dst) (mmix src)
 {-# INLINE copy #-}
 
 -- | Copy a vector. The two vectors must have the same length and may not
@@ -245,7 +247,7 @@ unsafeCopy
   => u (PrimState m) a   -- ^ target
   -> u' (PrimState m) a   -- ^ source
   -> m ()
-unsafeCopy m n = G.unsafeCopy (mmix m) (mmix n)
+unsafeCopy dst src = G.unsafeCopy (mmix dst) (mmix src)
 {-# INLINE unsafeCopy #-}
 
 -- | Move the contents of a vector. The two vectors must have the same
@@ -255,8 +257,8 @@ unsafeCopy m n = G.unsafeCopy (mmix m) (mmix n)
 -- Otherwise, the copying is performed as if the source vector were
 -- copied to a temporary vector and then the temporary vector was copied
 -- to the target vector.
-move :: PrimMonad m => MVector (PrimState m) a -> MVector (PrimState m) a -> m ()
-move = G.move
+move :: (PrimMonad m, Mixed u v a, Mixed u' v' a) => u (PrimState m) a -> u' (PrimState m) a -> m ()
+move dst src = G.move (mmix dst) (mmix src)
 {-# INLINE move #-}
 
 -- | Move the contents of a vector. The two vectors must have the same
@@ -266,9 +268,9 @@ move = G.move
 -- Otherwise, the copying is performed as if the source vector were
 -- copied to a temporary vector and then the temporary vector was copied
 -- to the target vector.
-unsafeMove :: PrimMonad m => MVector (PrimState m) a   -- ^ target
-                          -> MVector (PrimState m) a   -- ^ source
-                          -> m ()
-unsafeMove = G.unsafeMove
-
+unsafeMove :: (PrimMonad m, Mixed u v a, Mixed u' v' a)  
+  => u (PrimState m) a   -- ^ target
+  -> u' (PrimState m) a   -- ^ source
+  -> m ()
+unsafeMove dst src = G.unsafeMove (mmix dst) (mmix src)
 {-# INLINE unsafeMove #-}
