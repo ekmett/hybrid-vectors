@@ -36,6 +36,7 @@ import qualified Data.Vector.Mutable as BM
 import qualified Data.Vector.Storable as S
 import qualified Data.Vector.Primitive as P
 import qualified Data.Vector.Unboxed as U
+import qualified Data.Vector.Hybrid as H
 import Data.Vector.Fusion.Stream as Stream
 import Data.Data
 import Prelude hiding ( length, null, replicate, reverse, map, read, take, drop, init, tail )
@@ -65,6 +66,7 @@ instance                 Mixed B.MVector B.Vector a
 instance S.Storable a => Mixed S.MVector S.Vector a
 instance P.Prim a     => Mixed P.MVector P.Vector a
 instance U.Unbox a    => Mixed U.MVector U.Vector a
+instance (Mixed u v a, Mixed u' v' b) => Mixed (H.MVector u u') (H.Vector v v') (a, b)
 instance Mixed MVector Vector a where
   mmix = id -- don't nest!
   mix = id
