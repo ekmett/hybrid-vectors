@@ -9,6 +9,8 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
+{-# OPTIONS_GHC -fno-method-sharing #-} -- See: http://trac.haskell.org/vector/ticket/12
+
 #ifndef MIN_VERSION_base
 #define MIN_VERSION_base(x,y,z) 1
 #endif
@@ -22,8 +24,10 @@ import Control.Monad
 import Data.Monoid
 import qualified Data.Vector.Generic.Mutable as GM
 import qualified Data.Vector.Generic as G
-import Data.Typeable
+import Data.Vector.Fusion.Stream as Stream
+import Data.Data
 import Prelude hiding ( length, null, replicate, reverse, map, read, take, drop, init, tail )
+import Text.Read
 
 data MVector :: (* -> * -> *) -> (* -> * -> *) -> * -> * -> * where
   MV :: !(u s a) -> !(v s b) -> MVector u v s (a, b)
@@ -122,10 +126,51 @@ instance (G.Vector u a, G.Vector v b) => G.Vector (Vector u v) (a, b) where
   elemseq (V ks vs) (k,v) b = G.elemseq ks k (G.elemseq vs v b)
   {-# INLINE elemseq #-}
 
-instance (G.Vector u a, G.Vector v b) => Monoid (Vector u v (a, b)) where
+instance (G.Vector u a, G.Vector v b, c ~ (a, b)) => Monoid (Vector u v c) where
   mappend = (G.++)
   {-# INLINE mappend #-}
   mempty = G.empty
   {-# INLINE mempty #-}
   mconcat = G.concat
   {-# INLINE mconcat #-}
+
+instance (G.Vector u a, G.Vector v b, Show a, Show b, c ~ (a, b)) => Show (Vector u v c) where
+  showsPrec = G.showsPrec
+
+instance (G.Vector u a, G.Vector v b, Read a, Read b, c ~ (a, b)) => Read (Vector u v c) where
+  readPrec = G.readPrec
+  readListPrec = readListPrecDefault
+
+instance (Data a, Data b, Typeable1 u, Typeable1 v, G.Vector u a, G.Vector v b, c ~ (a, b)) => Data (Vector u v c) where
+  gfoldl       = G.gfoldl
+  toConstr _   = error "toConstr" -- TODO: virtual constructor
+  gunfold _ _  = error "gunfold"  -- TODO: virtual constructor
+  dataTypeOf _ = G.mkType "Data.Vector.Hybrid.Vector"
+  dataCast1    = G.dataCast
+
+
+instance (G.Vector u a, G.Vector v b, Eq a, Eq b, c ~ (a, b)) => Eq (Vector u v c) where
+  xs == ys = Stream.eq (G.stream xs) (G.stream ys)
+  {-# INLINE (==) #-}
+
+  xs /= ys = not (Stream.eq (G.stream xs) (G.stream ys))
+  {-# INLINE (/=) #-}
+
+
+-- See http://trac.haskell.org/vector/ticket/12
+instance (G.Vector u a, G.Vector v b, Ord a, Ord b, c ~ (a, b)) => Ord (Vector u v c) where
+  {-# INLINE compare #-}
+  compare xs ys = Stream.cmp (G.stream xs) (G.stream ys)
+
+  {-# INLINE (<) #-}
+  xs < ys = Stream.cmp (G.stream xs) (G.stream ys) == LT
+
+  {-# INLINE (<=) #-}
+  xs <= ys = Stream.cmp (G.stream xs) (G.stream ys) /= GT
+
+  {-# INLINE (>) #-}
+  xs > ys = Stream.cmp (G.stream xs) (G.stream ys) == GT
+
+  {-# INLINE (>=) #-}
+  xs >= ys = Stream.cmp (G.stream xs) (G.stream ys) /= LT
+
