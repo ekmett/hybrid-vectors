@@ -5,7 +5,7 @@ hybrid-vectors
 
 Hybrid vectors e.g. mixed unboxed/boxed vectors.
 
-This can be used to run algorithms such as those from `vector-algorithms` to work over a mixture of boxed and unboxed data.
+This can be used to run algorithms such as those from `vector-algorithms` over a mixture of boxed and unboxed data.
 
 Contact Information
 -------------------
