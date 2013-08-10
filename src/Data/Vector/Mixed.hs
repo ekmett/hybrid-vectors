@@ -58,7 +58,6 @@ module Data.Vector.Mixed
   , accum, accumulate, accumulate_
   , unsafeAccum, unsafeAccumulate, unsafeAccumulate_
 
-{-
   -- ** Permutations
   , reverse, backpermute, unsafeBackpermute
 
@@ -76,6 +75,7 @@ module Data.Vector.Mixed
   -- ** Monadic mapping
   , mapM, mapM_, forM, forM_
 
+{-
   -- ** Zipping
   , zipWith, zipWith3, zipWith4, zipWith5, zipWith6
   , izipWith, izipWith3, izipWith4, izipWith5, izipWith6
@@ -142,7 +142,7 @@ import Data.Vector.Mixed.Internal
 -- import qualified Data.Vector.Fusion.Stream as Stream
 
 -- import Control.DeepSeq ( NFData, rnf )
--- import Control.Monad ( MonadPlus(..), liftM, ap )
+import Control.Monad ( liftM )
 import Control.Monad.ST ( ST )
 -- import Control.Monad.Primitive
 
@@ -289,31 +289,31 @@ slice :: Mixed u v a => Int   -- ^ @i@ starting index
                  -> v a
                  -> Vector a
 {-# INLINE slice #-}
-slice i j m = G.slice i j (mix m)
+slice i j m = mix (G.slice i j m)
 
 -- | /O(1)/ Yield all but the last element without copying. The vector may not
 -- be empty.
 init :: Mixed u v a => v a -> Vector a
 {-# INLINE init #-}
-init m = G.init (mix m)
+init m = mix (G.init m)
 
 -- | /O(1)/ Yield all but the first element without copying. The vector may not
 -- be empty.
 tail :: Mixed u v a => v a -> Vector a
 {-# INLINE tail #-}
-tail m = G.tail (mix m)
+tail m = mix (G.tail m)
 
 -- | /O(1)/ Yield at the first @n@ elements without copying. The vector may
 -- contain less than @n@ elements in which case it is returned unchanged.
 take :: Mixed u v a => Int -> v a -> Vector a
 {-# INLINE take #-}
-take i m = G.take i (mix m)
+take i m = mix (G.take i m)
 
 -- | /O(1)/ Yield all but the first @n@ elements without copying. The vector may
 -- contain less than @n@ elements in which case an empty vector is returned.
 drop :: Mixed u v a => Int -> v a -> Vector a
 {-# INLINE drop #-}
-drop i m = G.drop i (mix m)
+drop i m = mix (G.drop i m)
 
 -- | /O(1)/ Yield the first @n@ elements paired with the remainder without copying.
 --
@@ -321,7 +321,8 @@ drop i m = G.drop i (mix m)
 -- but slightly more efficient.
 {-# INLINE splitAt #-}
 splitAt :: Mixed u v a => Int -> v a -> (Vector a, Vector a)
-splitAt i m = G.splitAt i (mix m)
+splitAt i m = case G.splitAt i m of
+  (xs, ys) -> (mix xs, mix ys)
 
 -- | /O(1)/ Yield a slice of the vector without copying. The vector must
 -- contain at least @i+n@ elements but this is not checked.
@@ -330,31 +331,31 @@ unsafeSlice :: Mixed u v a => Int   -- ^ @i@ starting index
                        -> v a
                        -> Vector a
 {-# INLINE unsafeSlice #-}
-unsafeSlice i j m = G.unsafeSlice i j (mix m)
+unsafeSlice i j m = mix (G.unsafeSlice i j m)
 
 -- | /O(1)/ Yield all but the last element without copying. The vector may not
 -- be empty but this is not checked.
 unsafeInit :: Mixed u v a => v a -> Vector a
 {-# INLINE unsafeInit #-}
-unsafeInit m = G.unsafeInit (mix m)
+unsafeInit m = mix (G.unsafeInit m)
 
 -- | /O(1)/ Yield all but the first element without copying. The vector may not
 -- be empty but this is not checked.
 unsafeTail :: Mixed u v a => v a -> Vector a
 {-# INLINE unsafeTail #-}
-unsafeTail m = G.unsafeTail (mix m)
+unsafeTail m = mix (G.unsafeTail m)
 
 -- | /O(1)/ Yield the first @n@ elements without copying. The vector must
 -- contain at least @n@ elements but this is not checked.
 unsafeTake :: Mixed u v a => Int -> v a -> Vector a
 {-# INLINE unsafeTake #-}
-unsafeTake i m = G.unsafeTake i (mix m)
+unsafeTake i m = mix (G.unsafeTake i m)
 
 -- | /O(1)/ Yield all but the first @n@ elements without copying. The vector
 -- must contain at least @n@ elements but this is not checked.
 unsafeDrop :: Mixed u v a => Int -> v a -> Vector a
 {-# INLINE unsafeDrop #-}
-unsafeDrop i m = G.unsafeDrop i (mix m)
+unsafeDrop i m = mix (G.unsafeDrop i m)
 
 -- Initialisation
 -- --------------
@@ -466,12 +467,12 @@ enumFromThenTo = G.enumFromThenTo
 
 -- | /O(n)/ Prepend an element
 cons :: Mixed u v a => a -> v a -> Vector a
-cons a as = G.cons a (mix as)
+cons a as = mix (G.cons a as)
 {-# INLINE cons #-}
 
 -- | /O(n)/ Append an element
 snoc :: Mixed u v a => v a -> a -> Vector a
-snoc as = G.snoc (mix as)
+snoc as a = mix (G.snoc as a)
 {-# INLINE snoc #-}
 
 infixr 5 ++
@@ -482,7 +483,7 @@ m ++ n = mix m G.++ mix n
 
 -- | /O(n)/ Concatenate all vectors in the list
 concat :: Mixed u v a => [v a] -> Vector a
-concat xs = G.concat (fmap mix xs)
+concat xs = mix (G.concat xs)
 {-# INLINE concat #-}
 
 -- Monadic initialisation
@@ -524,7 +525,7 @@ create p = mix (G.create p)
 -- a copy of just the elements that belong to the slice and allows the huge
 -- vector to be garbage collected.
 force :: Mixed u v a => v a -> Vector a
-force m = G.force (mix m)
+force m = mix (G.force m)
 {-# INLINE force #-}
 
 -- Bulk updates
@@ -538,7 +539,7 @@ force m = G.force (mix m)
 (//) :: Mixed u v a => v a   -- ^ initial vector (of length @m@)
                 -> [(Int, a)] -- ^ list of index/value pairs (of length @n@)
                 -> Vector a
-m // xs = mix m G.// xs
+m // xs = mix (m G.// xs)
 {-# INLINE (//) #-}
 
 -- | /O(m+n)/ For each pair @(i,a)@ from the vector of index/value pairs,
@@ -575,7 +576,7 @@ update_ a b c = G.update_ (mix a) (mix b) (mix c)
 
 -- | Same as ('//') but without bounds checking.
 unsafeUpd :: Mixed u v a => v a -> [(Int, a)] -> Vector a
-unsafeUpd m = G.unsafeUpd (mix m)
+unsafeUpd m xs = mix (G.unsafeUpd m xs)
 {-# INLINE unsafeUpd #-}
 
 -- | Same as 'update' but without bounds checking.
@@ -600,7 +601,7 @@ accum :: Mixed u v a => (a -> b -> a) -- ^ accumulating function @f@
       -> v a      -- ^ initial vector (of length @m@)
       -> [(Int,b)]     -- ^ list of index/value pairs (of length @n@)
       -> Vector a
-accum f m = G.accum f (mix m)
+accum f m xs = mix (G.accum f m xs)
 {-# INLINE accum #-}
 
 -- | /O(m+n)/ For each pair @(i,b)@ from the vector of pairs, replace the vector
@@ -640,7 +641,7 @@ accumulate_ f a b c = G.accumulate_ f (mix a) (mix b) (mix c)
 
 -- | Same as 'accum' but without bounds checking.
 unsafeAccum :: Mixed u v a => (a -> b -> a) -> v a -> [(Int,b)] -> Vector a
-unsafeAccum f m = G.unsafeAccum f (mix m)
+unsafeAccum f m xs = mix (G.unsafeAccum f m xs)
 {-# INLINE unsafeAccum #-}
 
 -- | Same as 'accumulate' but without bounds checking.
@@ -655,28 +656,27 @@ unsafeAccumulate_
 unsafeAccumulate_ f a b c = G.unsafeAccumulate_ f (mix a) (mix b) (mix c)
 {-# INLINE unsafeAccumulate_ #-}
 
-{-
 -- Permutations
 -- ------------
 
 -- | /O(n)/ Reverse a vector
-reverse :: Vector a -> Vector a
+reverse :: Mixed u v a => v a -> Vector a
+reverse m = mix (G.reverse m)
 {-# INLINE reverse #-}
-reverse = G.reverse
 
 -- | /O(n)/ Yield the vector obtained by replacing each element @i@ of the
 -- index vector by @xs'!'i@. This is equivalent to @'map' (xs'!') is@ but is
 -- often much more efficient.
 --
 -- > backpermute <a,b,c,d> <0,3,2,3,1,0> = <a,d,c,d,b,a>
-backpermute :: Vector a -> Vector Int -> Vector a
+backpermute :: (Mixed u v a, Mixed u' v' Int) => v a -> v' Int -> Vector a
+backpermute m n = G.backpermute (mix m) (mix n)
 {-# INLINE backpermute #-}
-backpermute = G.backpermute
 
 -- | Same as 'backpermute' but without bounds checking.
-unsafeBackpermute :: Vector a -> Vector Int -> Vector a
+unsafeBackpermute :: (Mixed u v a, Mixed u' v' Int) => v a -> v' Int -> Vector a
+unsafeBackpermute m n = G.unsafeBackpermute (mix m) (mix n)
 {-# INLINE unsafeBackpermute #-}
-unsafeBackpermute = G.unsafeBackpermute
 
 -- Safe destructive updates
 -- ------------------------
@@ -688,63 +688,65 @@ unsafeBackpermute = G.unsafeBackpermute
 -- @
 -- modify (\\v -> write v 0 \'x\') ('replicate' 3 \'a\') = \<\'x\',\'a\',\'a\'\>
 -- @
-modify :: (forall s. MVector s a -> ST s ()) -> Vector a -> Vector a
+modify :: Mixed u v a => (forall s. u s a -> ST s ()) -> v a -> Vector a
+modify p v = mix (G.modify p v)
 {-# INLINE modify #-}
-modify p = G.modify p
 
 -- Indexing
 -- --------
 
 -- | /O(n)/ Pair each element in a vector with its index
-indexed :: Vector a -> Vector (Int,a)
+indexed :: (G.Vector v a, Mixed u v (Int, a)) => v a -> Vector (Int,a)
+indexed m = mix (G.indexed m)
 {-# INLINE indexed #-}
-indexed = G.indexed
 
 -- Mapping
 -- -------
 
 -- | /O(n)/ Map a function over a vector
-map :: (a -> b) -> Vector a -> Vector b
+map :: (G.Vector v a, Mixed u v b) => (a -> b) -> v a -> Vector b
+map f m = mix (G.map f m)
 {-# INLINE map #-}
-map = G.map
 
 -- | /O(n)/ Apply a function to every element of a vector and its index
-imap :: (Int -> a -> b) -> Vector a -> Vector b
+imap :: (G.Vector v a, Mixed u v b) => (Int -> a -> b) -> v a -> Vector b
+imap f m = mix (G.imap f m)
 {-# INLINE imap #-}
-imap = G.imap
 
 -- | Map a function over a vector and concatenate the results.
-concatMap :: (a -> Vector b) -> Vector a -> Vector b
+concatMap :: (Mixed u v b, Mixed u' v' a) => (a -> v b) -> v' a -> Vector b
+concatMap f m = G.concatMap (mix . f) (mix m)
 {-# INLINE concatMap #-}
-concatMap = G.concatMap
 
 -- Monadic mapping
 -- ---------------
 
 -- | /O(n)/ Apply the monadic action to all elements of the vector, yielding a
 -- vector of results
-mapM :: Monad m => (a -> m b) -> Vector a -> m (Vector b)
+mapM :: (Monad m, G.Vector v a, Mixed u v b) => (a -> m b) -> v a -> m (Vector b)
+mapM f m = liftM mix (G.mapM f m)
 {-# INLINE mapM #-}
-mapM = G.mapM
 
 -- | /O(n)/ Apply the monadic action to all elements of a vector and ignore the
 -- results
-mapM_ :: Monad m => (a -> m b) -> Vector a -> m ()
+mapM_ :: (Monad m, G.Vector v a) => (a -> m b) -> v a -> m ()
+mapM_ f m = G.mapM_ f m
 {-# INLINE mapM_ #-}
-mapM_ = G.mapM_
 
 -- | /O(n)/ Apply the monadic action to all elements of the vector, yielding a
 -- vector of results. Equvalent to @flip 'mapM'@.
-forM :: Monad m => Vector a -> (a -> m b) -> m (Vector b)
+forM :: (Monad m, G.Vector v a, Mixed u v b) => v a -> (a -> m b) -> m (Vector b)
+forM m f = liftM mix (G.forM m f)
 {-# INLINE forM #-}
-forM = G.forM
 
 -- | /O(n)/ Apply the monadic action to all elements of a vector and ignore the
 -- results. Equivalent to @flip 'mapM_'@.
-forM_ :: Monad m => Vector a -> (a -> m b) -> m ()
-{-# INLINE forM_ #-}
+forM_ :: (Monad m, G.Vector v a) => v a -> (a -> m b) -> m ()
 forM_ = G.forM_
+{-# INLINE forM_ #-}
 
+
+{-
 -- Zipping
 -- -------
 
