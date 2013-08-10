@@ -75,10 +75,10 @@ module Data.Vector.Mixed
   -- ** Monadic mapping
   , mapM, mapM_, forM, forM_
 
-{-
   -- ** Zipping
   , zipWith, zipWith3, zipWith4, zipWith5, zipWith6
   , izipWith, izipWith3, izipWith4, izipWith5, izipWith6
+{-
   , zip, zip3, zip4, zip5, zip6
 
   -- ** Monadic zipping
@@ -746,66 +746,67 @@ forM_ = G.forM_
 {-# INLINE forM_ #-}
 
 
-{-
 -- Zipping
 -- -------
 
 -- | /O(min(m,n))/ Zip two vectors with the given function.
-zipWith :: (a -> b -> c) -> Vector a -> Vector b -> Vector c
+zipWith :: (Mixed ua va a, Mixed ub vb b, Mixed uc vc c)
+        => (a -> b -> c) -> va a -> vb b -> Vector c
+zipWith k a b = G.zipWith k (mix a) (mix b)
 {-# INLINE zipWith #-}
-zipWith = G.zipWith
 
 -- | Zip three vectors with the given function.
-zipWith3 :: (a -> b -> c -> d) -> Vector a -> Vector b -> Vector c -> Vector d
+zipWith3 :: (Mixed ua va a, Mixed ub vb b, Mixed uc vc c, Mixed ud vd d)
+         => (a -> b -> c -> d) -> va a -> vb b -> vc c -> Vector d
+zipWith3 k a b c = G.zipWith3 k (mix a) (mix b) (mix c)
 {-# INLINE zipWith3 #-}
-zipWith3 = G.zipWith3
 
-zipWith4 :: (a -> b -> c -> d -> e)
-         -> Vector a -> Vector b -> Vector c -> Vector d -> Vector e
+zipWith4 :: (Mixed ua va a, Mixed ub vb b, Mixed uc vc c, Mixed ud vd d, Mixed ue ve e)
+         => (a -> b -> c -> d -> e) -> va a -> vb b -> vc c -> vd d -> Vector e
+zipWith4 k a b c d = G.zipWith4 k (mix a) (mix b) (mix c) (mix d)
 {-# INLINE zipWith4 #-}
-zipWith4 = G.zipWith4
 
-zipWith5 :: (a -> b -> c -> d -> e -> f)
-         -> Vector a -> Vector b -> Vector c -> Vector d -> Vector e
-         -> Vector f
+zipWith5 :: (Mixed ua va a, Mixed ub vb b, Mixed uc vc c, Mixed ud vd d, Mixed ue ve e, Mixed uf vf f)
+         => (a -> b -> c -> d -> e -> f) -> va a -> vb b -> vc c -> vd d -> ve e -> Vector f
+zipWith5 k a b c d e = G.zipWith5 k (mix a) (mix b) (mix c) (mix d) (mix e)
 {-# INLINE zipWith5 #-}
-zipWith5 = G.zipWith5
 
-zipWith6 :: (a -> b -> c -> d -> e -> f -> g)
-         -> Vector a -> Vector b -> Vector c -> Vector d -> Vector e
-         -> Vector f -> Vector g
+zipWith6 :: (Mixed ua va a, Mixed ub vb b, Mixed uc vc c, Mixed ud vd d, Mixed ue ve e, Mixed uf vf f, Mixed ug vg g)
+         => (a -> b -> c -> d -> e -> f -> g) -> va a -> vb b -> vc c -> vd d -> ve e -> vf f -> Vector g
+zipWith6 k a b c d e f = G.zipWith6 k (mix a) (mix b) (mix c) (mix d) (mix e) (mix f)
 {-# INLINE zipWith6 #-}
-zipWith6 = G.zipWith6
+
 
 -- | /O(min(m,n))/ Zip two vectors with a function that also takes the
 -- elements' indices.
-izipWith :: (Int -> a -> b -> c) -> Vector a -> Vector b -> Vector c
+
+izipWith :: (Mixed ua va a, Mixed ub vb b, Mixed uc vc c)
+        => (Int -> a -> b -> c) -> va a -> vb b -> Vector c
+izipWith k a b = G.izipWith k (mix a) (mix b)
 {-# INLINE izipWith #-}
-izipWith = G.izipWith
 
 -- | Zip three vectors and their indices with the given function.
-izipWith3 :: (Int -> a -> b -> c -> d)
-          -> Vector a -> Vector b -> Vector c -> Vector d
+izipWith3 :: (Mixed ua va a, Mixed ub vb b, Mixed uc vc c, Mixed ud vd d)
+         => (Int -> a -> b -> c -> d) -> va a -> vb b -> vc c -> Vector d
+izipWith3 k a b c = G.izipWith3 k (mix a) (mix b) (mix c)
 {-# INLINE izipWith3 #-}
-izipWith3 = G.izipWith3
 
-izipWith4 :: (Int -> a -> b -> c -> d -> e)
-          -> Vector a -> Vector b -> Vector c -> Vector d -> Vector e
+izipWith4 :: (Mixed ua va a, Mixed ub vb b, Mixed uc vc c, Mixed ud vd d, Mixed ue ve e)
+         => (Int -> a -> b -> c -> d -> e) -> va a -> vb b -> vc c -> vd d -> Vector e
+izipWith4 k a b c d = G.izipWith4 k (mix a) (mix b) (mix c) (mix d)
 {-# INLINE izipWith4 #-}
-izipWith4 = G.izipWith4
 
-izipWith5 :: (Int -> a -> b -> c -> d -> e -> f)
-          -> Vector a -> Vector b -> Vector c -> Vector d -> Vector e
-          -> Vector f
+izipWith5 :: (Mixed ua va a, Mixed ub vb b, Mixed uc vc c, Mixed ud vd d, Mixed ue ve e, Mixed uf vf f)
+         => (Int -> a -> b -> c -> d -> e -> f) -> va a -> vb b -> vc c -> vd d -> ve e -> Vector f
+izipWith5 k a b c d e = G.izipWith5 k (mix a) (mix b) (mix c) (mix d) (mix e)
 {-# INLINE izipWith5 #-}
-izipWith5 = G.izipWith5
 
-izipWith6 :: (Int -> a -> b -> c -> d -> e -> f -> g)
-          -> Vector a -> Vector b -> Vector c -> Vector d -> Vector e
-          -> Vector f -> Vector g
+izipWith6 :: (Mixed ua va a, Mixed ub vb b, Mixed uc vc c, Mixed ud vd d, Mixed ue ve e, Mixed uf vf f, Mixed ug vg g)
+         => (Int -> a -> b -> c -> d -> e -> f -> g) -> va a -> vb b -> vc c -> vd d -> ve e -> vf f -> Vector g
+izipWith6 k a b c d e f = G.izipWith6 k (mix a) (mix b) (mix c) (mix d) (mix e) (mix f)
 {-# INLINE izipWith6 #-}
-izipWith6 = G.izipWith6
 
+{-
 -- | Elementwise pairing of array elements.
 zip :: Vector a -> Vector b -> Vector (a, b)
 {-# INLINE zip #-}
