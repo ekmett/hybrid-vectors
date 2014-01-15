@@ -183,7 +183,7 @@ unsafeGrow = G.unsafeGrow
 -- ------------------------
 
 -- | Reset all elements of the vector to some undefined value, clearing all
--- references to external objects. This is usually a noop for unboxed vectors. 
+-- references to external objects. This is usually a noop for unboxed vectors.
 clear :: (PrimMonad m, G.MVector u a, G.MVector v b) => MVector u v (PrimState m) (a, b) -> m ()
 clear = G.clear
 {-# INLINE clear #-}

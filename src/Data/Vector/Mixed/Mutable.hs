@@ -268,7 +268,7 @@ move dst src = G.move (mmix dst) (mmix src)
 -- Otherwise, the copying is performed as if the source vector were
 -- copied to a temporary vector and then the temporary vector was copied
 -- to the target vector.
-unsafeMove :: (PrimMonad m, Mixed u v a, Mixed u' v' a)  
+unsafeMove :: (PrimMonad m, Mixed u v a, Mixed u' v' a)
   => u (PrimState m) a   -- ^ target
   -> u' (PrimState m) a   -- ^ source
   -> m ()
