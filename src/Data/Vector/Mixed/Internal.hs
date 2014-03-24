@@ -42,6 +42,12 @@ import Data.Data
 import Prelude hiding ( length, null, replicate, reverse, map, read, take, drop, init, tail )
 import Text.Read
 
+#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
+#define Typeable2 Typeable
+#define Typeable1 Typeable
+#endif
+
+
 -- | Vector doesn't provide a way to recover the type of the immutable vector from the mutable vector type
 --
 -- This would otherwise prevent us from finishing the implementation of 'basicUnsafeFreeze' in 'Vector'

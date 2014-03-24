@@ -181,8 +181,6 @@ import Prelude hiding ( length, null,
                         enumFromTo, enumFromThenTo,
                         mapM, mapM_, sequence, sequence_ )
 
-import qualified Prelude
-
 #define BOUNDS_CHECK(f) (Ck.f __FILE__ __LINE__ Ck.Bounds)
 #define UNSAFE_CHECK(f) (Ck.f __FILE__ __LINE__ Ck.Unsafe)
 
@@ -1047,7 +1045,7 @@ elem = G.elem
 
 infix 4 `notElem`
 -- | /O(n)/ Check if the vector does not contain an element (inverse of 'elem')
-notElem :: (G.Vector v a, Eq a) => a -> Vector a -> Bool
+notElem :: (G.Vector v a, Eq a) => a -> v a -> Bool
 notElem = G.notElem
 {-# INLINE notElem #-}
 
@@ -1270,7 +1268,7 @@ foldM'_ = G.foldM'_
 
 -- | /O(n)/ Monadic fold over non-empty vectors with strict accumulator
 -- that discards the result
-fold1M'_ :: (G.Vector v a, Monad m) => (a -> a -> m a) -> Vector a -> m ()
+fold1M'_ :: (G.Vector v a, Monad m) => (a -> a -> m a) -> v a -> m ()
 fold1M'_ = G.fold1M'_
 {-# INLINE fold1M'_ #-}
 
