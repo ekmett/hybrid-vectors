@@ -1,3 +1,7 @@
+0.1.2.1
+-------
+* Support `deepseq` 1.5
+
 0.1.2
 -----
 * GHC 7.8.1rc2 compatibility
