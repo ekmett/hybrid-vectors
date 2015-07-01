@@ -1,3 +1,7 @@
+0.2
+---
+* Remove `Mixed`. A bug in GHC 7.10.1 prevents it from working.
+
 0.1.2.1
 -------
 * Support `deepseq` 1.5
