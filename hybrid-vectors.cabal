@@ -1,6 +1,6 @@
 name:          hybrid-vectors
 category:      Data, Vector
-version:       0.1.2.1
+version:       0.2
 license:       BSD3
 cabal-version: >= 1.6
 license-file:  LICENSE
