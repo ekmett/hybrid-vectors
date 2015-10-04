@@ -22,7 +22,11 @@ import Control.Monad
 import Data.Monoid
 import qualified Data.Vector.Generic.Mutable as GM
 import qualified Data.Vector.Generic as G
+#if MIN_VERSION_vector(0,11,0)
+import Data.Vector.Fusion.Bundle as Stream
+#else
 import Data.Vector.Fusion.Stream as Stream
+#endif
 import Data.Data
 import Prelude hiding ( length, null, replicate, reverse, map, read, take, drop, init, tail )
 import Text.Read
@@ -51,6 +55,10 @@ mvectorTyCon = mkTyCon "Data.Vector.Hybrid.Internal.MVector"
 #endif
 
 instance (GM.MVector u a, GM.MVector v b) => GM.MVector (MVector u v) (a, b) where
+#if MIN_VERSION_vector(0,11,0)
+  basicInitialize (MV ks vs)= GM.basicInitialize ks >> GM.basicInitialize vs
+  {-# INLINE basicInitialize #-}
+#endif
   basicLength (MV ks _) = GM.basicLength ks
   {-# INLINE basicLength #-}
   basicUnsafeSlice s e (MV ks vs) = MV (GM.basicUnsafeSlice s e ks) (GM.basicUnsafeSlice s e vs)
