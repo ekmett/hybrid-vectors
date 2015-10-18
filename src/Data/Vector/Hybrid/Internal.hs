@@ -13,6 +13,10 @@
 #define MIN_VERSION_base(x,y,z) 1
 #endif
 
+#ifndef MIN_VERSION_vector
+#define MIN_VERSION_vector(x,y,z) 1
+#endif
+
 module Data.Vector.Hybrid.Internal
   ( MVector(..)
   , Vector(..)
@@ -22,7 +26,14 @@ import Control.Monad
 import Data.Monoid
 import qualified Data.Vector.Generic.Mutable as GM
 import qualified Data.Vector.Generic as G
+
+
+#if MIN_VERSION_vector(0,11,0)
+import Data.Vector.Fusion.Bundle as Stream
+#else
 import Data.Vector.Fusion.Stream as Stream
+#endif
+
 import Data.Data
 import Prelude hiding ( length, null, replicate, reverse, map, read, take, drop, init, tail )
 import Text.Read
@@ -85,6 +96,10 @@ instance (GM.MVector u a, GM.MVector v b) => GM.MVector (MVector u v) (a, b) whe
   {-# INLINE basicUnsafeMove #-}
   basicUnsafeGrow (MV ks vs) n = liftM2 MV (GM.basicUnsafeGrow ks n) (GM.basicUnsafeGrow vs n)
   {-# INLINE basicUnsafeGrow #-}
+#if MIN_VERSION_vector(0,11,0)
+  basicInitialize (MV ks vs) = GM.basicInitialize ks >> GM.basicInitialize vs
+  {-# INLINE basicInitialize #-}
+#endif
 
 -- hybrid vectors
 data Vector :: (* -> *) -> (* -> *) -> * -> * where

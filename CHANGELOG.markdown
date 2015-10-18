@@ -1,3 +1,7 @@
+0.2.1
+-----
+* Support `vector` 0.11
+
 0.2
 ---
 * Remove `Mixed`. A bug in GHC 7.10.1 prevents it from working.
