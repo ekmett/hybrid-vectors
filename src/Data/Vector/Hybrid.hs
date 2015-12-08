@@ -151,6 +151,7 @@ import Control.Monad.Primitive
 import Control.Monad.ST
 import Data.Vector.Hybrid.Internal
 import qualified Data.Vector.Generic as G
+import qualified Data.Vector.Generic.Mutable as GM
 import Prelude hiding ( length, null,
                         replicate, (++), concat,
                         head, last,
@@ -586,7 +587,7 @@ mapM = G.mapM
 
 -- | /O(n)/ Apply the monadic action to all elements of a vector and ignore the
 -- results
-mapM_ :: (Monad m, G.Vector u a, G.Vector v b, G.Vector u c, G.Vector v d) => ((a, b) -> m (c, d)) -> Vector u v (a, b) -> m ()
+mapM_ :: (Monad m, G.Vector u a, G.Vector v b) => ((a, b) -> m c) -> Vector u v (a, b) -> m ()
 mapM_ = G.mapM_
 {-# INLINE mapM_ #-}
 
@@ -598,7 +599,7 @@ forM = G.forM
 
 -- | /O(n)/ Apply the monadic action to all elements of a vector and ignore the
 -- results. Equivalent to @flip 'mapM_'@.
-forM_ :: (Monad m, G.Vector u a, G.Vector v b, G.Vector u c, G.Vector v d) => Vector u v (a, b) -> ((a, b) -> m (c, d)) -> m ()
+forM_ :: (Monad m, G.Vector u a, G.Vector v b) => Vector u v (a, b) -> ((a, b) -> m c) -> m ()
 forM_ = G.forM_
 {-# INLINE forM_ #-}
 
@@ -1179,7 +1180,7 @@ fromListN = G.fromListN
 
 -- | /O(1)/ Unsafe convert a mutable vector to an immutable one without
 -- copying. The mutable vector may not be used after this operation.
-unsafeFreeze :: (G.Vector u a, G.Vector v b, PrimMonad m) => G.Mutable (Vector u v) (PrimState m) (a, b) -> m (Vector u v (a, b))
+unsafeFreeze :: (GM.MVector u a, GM.MVector v b, PrimMonad m) => MVector u v (PrimState m) (a, b) -> m (Vector u v (a, b))
 unsafeFreeze = G.unsafeFreeze
 {-# INLINE unsafeFreeze #-}
 
