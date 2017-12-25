@@ -1,13 +1,7 @@
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE CPP, DeriveDataTypeable, FlexibleInstances, GADTs        #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, KindSignatures               #-}
+{-# LANGUAGE MultiParamTypeClasses, ScopedTypeVariables, TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances                                     #-}
 
 #ifndef MIN_VERSION_base
 #define MIN_VERSION_base(x,y,z) 1
@@ -22,10 +16,12 @@ module Data.Vector.Hybrid.Internal
   , Vector(..)
   ) where
 
-import Control.Monad
-import Data.Monoid
+import           Control.Monad
+import qualified Data.Foldable               as F
+import           Data.Monoid
+import           Data.Semigroup
+import qualified Data.Vector.Generic         as G
 import qualified Data.Vector.Generic.Mutable as GM
-import qualified Data.Vector.Generic as G
 
 
 #if MIN_VERSION_vector(0,11,0)
@@ -35,7 +31,8 @@ import Data.Vector.Fusion.Stream as Stream
 #endif
 
 import Data.Data
-import Prelude hiding ( length, null, replicate, reverse, map, read, take, drop, init, tail )
+import Prelude   hiding (drop, init, length, map, null, read, replicate,
+                  reverse, tail, take)
 import Text.Read
 
 data MVector :: (* -> * -> *) -> (* -> * -> *) -> * -> * -> * where
@@ -141,6 +138,10 @@ instance (G.Vector u a, G.Vector v b) => G.Vector (Vector u v) (a, b) where
   {-# INLINE basicUnsafeCopy #-}
   elemseq (V ks vs) (k,v) b = G.elemseq ks k (G.elemseq vs v b)
   {-# INLINE elemseq #-}
+
+instance (G.Vector u a, G.Vector v b, c ~ (a, b)) => Semigroup (Vector u v c) where
+  (<>) = mappend
+  sconcat = mconcat . F.toList
 
 instance (G.Vector u a, G.Vector v b, c ~ (a, b)) => Monoid (Vector u v c) where
   mappend = (G.++)
