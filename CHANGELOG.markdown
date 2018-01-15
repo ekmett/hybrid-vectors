@@ -1,3 +1,7 @@
+next [????.??.??]
+-----------------
+* Add `Semigroup` instance for `Vector`.
+
 0.2.1
 -----
 * Support `vector` 0.11
