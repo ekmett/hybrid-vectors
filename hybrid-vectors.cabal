@@ -18,6 +18,15 @@ extra-source-files:
   .gitignore
   .vim.custom
 description: Hybrid vectors e.g. Mixed Boxed/Unboxed vectors
+tested-with:   GHC == 7.0.4
+             , GHC == 7.2.2
+             , GHC == 7.4.2
+             , GHC == 7.6.3
+             , GHC == 7.8.4
+             , GHC == 7.10.3
+             , GHC == 8.0.2
+             , GHC == 8.2.2
+             , GHC == 8.4.1
 
 source-repository head
   type: git
