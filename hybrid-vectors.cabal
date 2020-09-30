@@ -55,3 +55,6 @@ library
 
   if impl(ghc<6.13)
     Ghc-Options: -finline-if-enough-args -fno-method-sharing
+
+  if impl(ghc >= 8.6)
+    ghc-options: -Wno-star-is-type
