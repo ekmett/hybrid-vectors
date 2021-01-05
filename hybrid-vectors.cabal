@@ -14,7 +14,6 @@ build-type:    Simple
 synopsis:      Hybrid vectors e.g. Mixed Boxed/Unboxed vectors
 extra-source-files:
   .ghci
-  .travis.yml
   .gitignore
   .vim.custom
 description: Hybrid vectors e.g. Mixed Boxed/Unboxed vectors.

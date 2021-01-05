@@ -1,7 +1,7 @@
 hybrid-vectors
 ==============
 
-[![Hackage](https://img.shields.io/hackage/v/hybrid-vectors.svg)](https://hackage.haskell.org/package/hybrid-vectors) [![Build Status](https://secure.travis-ci.org/ekmett/hybrid-vectors.png?branch=master)](http://travis-ci.org/ekmett/hybrid-vectors)
+[![Hackage](https://img.shields.io/hackage/v/hybrid-vectors.svg)](https://hackage.haskell.org/package/hybrid-vectors) [![Build Status](https://github.com/ekmett/hybrid-vectors/workflows/Haskell-CI/badge.svg)](https://github.com/ekmett/hybrid-vectors/actions?query=workflow%3AHaskell-CI)
 
 Hybrid vectors e.g. mixed unboxed/boxed vectors.
 
