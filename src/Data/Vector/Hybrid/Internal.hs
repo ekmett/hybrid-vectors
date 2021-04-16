@@ -140,12 +140,14 @@ instance (G.Vector u a, G.Vector v b) => G.Vector (Vector u v) (a, b) where
   {-# INLINE elemseq #-}
 
 instance (G.Vector u a, G.Vector v b, c ~ (a, b)) => Semigroup (Vector u v c) where
-  (<>) = mappend
+  (<>) = (G.++)
   sconcat = mconcat . F.toList
 
 instance (G.Vector u a, G.Vector v b, c ~ (a, b)) => Monoid (Vector u v c) where
+#if !(MIN_VERSION_base(4,11,0))
   mappend = (G.++)
   {-# INLINE mappend #-}
+#endif
   mempty = G.empty
   {-# INLINE mempty #-}
   mconcat = G.concat
