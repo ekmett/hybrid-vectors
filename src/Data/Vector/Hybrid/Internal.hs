@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP, DeriveDataTypeable, FlexibleInstances, GADTs        #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving, KindSignatures               #-}
 {-# LANGUAGE MultiParamTypeClasses, ScopedTypeVariables, TypeFamilies #-}
+{-# LANGUAGE TypeOperators                                            #-}
 {-# LANGUAGE UndecidableInstances                                     #-}
 
 #ifndef MIN_VERSION_base
