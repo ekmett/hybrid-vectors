@@ -1,3 +1,7 @@
+next [????.??.??]
+-----------------
+* Allow building with `vector-0.13.*`.
+
 0.2.2 [2018.01.18]
 ------------------
 * Add `Semigroup` instance for `Vector`.

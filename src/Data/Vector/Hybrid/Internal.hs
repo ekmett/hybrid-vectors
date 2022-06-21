@@ -165,7 +165,7 @@ instance (Data a, Data b, Typeable1 u, Typeable1 v, G.Vector u a, G.Vector v b, 
   gfoldl       = G.gfoldl
   toConstr _   = error "toConstr" -- TODO: virtual constructor
   gunfold _ _  = error "gunfold"  -- TODO: virtual constructor
-  dataTypeOf _ = G.mkType "Data.Vector.Hybrid.Vector"
+  dataTypeOf _ = mkNoRepType "Data.Vector.Hybrid.Vector"
   dataCast1    = G.dataCast
 
 
