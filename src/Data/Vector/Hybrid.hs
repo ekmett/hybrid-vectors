@@ -151,19 +151,7 @@ import Control.Monad.Primitive
 import Control.Monad.ST
 import Data.Vector.Hybrid.Internal
 import qualified Data.Vector.Generic as G
-import Prelude hiding ( length, null,
-                        replicate, (++), concat,
-                        head, last,
-                        init, tail, take, drop, splitAt, reverse,
-                        map, concatMap,
-                        zipWith, zipWith3, zip, zip3, unzip, unzip3,
-                        filter, takeWhile, dropWhile, span, break,
-                        elem, notElem,
-                        foldl, foldl1, foldr, foldr1,
-                        all, any, sum, product, minimum, maximum,
-                        scanl, scanl1, scanr, scanr1,
-                        enumFromTo, enumFromThenTo,
-                        mapM, mapM_ )
+import Prelude (Int, Bool, Maybe, Monad, Ordering, Ord, Eq)
 
 
 -- Length
