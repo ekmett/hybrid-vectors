@@ -1,3 +1,7 @@
+next [????.??.??]
+-----------------
+* Future-proof against `foldl'` being added to the `Prelude`.
+
 0.2.3 [2020.06.21]
 ------------------
 * Allow building with `vector-0.13.*`.
