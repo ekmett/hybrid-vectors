@@ -7,16 +7,11 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FunctionalDependencies #-}
 
 -- {-# OPTIONS_GHC -fno-method-sharing #-} -- See: http://trac.haskell.org/vector/ticket/12
-
-#ifndef MIN_VERSION_base
-#define MIN_VERSION_base(x,y,z) 1
-#endif
 
 module Data.Vector.Mixed.Internal
   ( MVector(..), mboxed, munboxed
@@ -42,12 +37,6 @@ import Data.Data
 import Prelude hiding ( length, null, replicate, reverse, map, read, take, drop, init, tail )
 import Text.Read
 
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
-#define Typeable2 Typeable
-#define Typeable1 Typeable
-#endif
-
-
 -- | Vector doesn't provide a way to recover the type of the immutable vector from the mutable vector type
 --
 -- This would otherwise prevent us from finishing the implementation of 'basicUnsafeFreeze' in 'Vector'
@@ -55,8 +44,8 @@ import Text.Read
 -- This class captures the invariants necessary to 'hide' the choice of vector type from the user in such
 -- a way that we can go from mutable vector to immutabl vector and back again.
 class
-  ( Typeable2 mv
-  , Typeable1 v
+  ( Typeable mv
+  , Typeable v
   , mv ~ G.Mutable v
   , GM.MVector mv a
   , G.Vector v a
@@ -80,7 +69,6 @@ instance Mixed MVector Vector a where
 -- | A @MVector s a@ is mutable vector that could have any vector type underneath
 data MVector :: * -> * -> * where
   MV :: Mixed mv v a => !(mv s a) -> MVector s a
- deriving Typeable
 
 {-# RULES
 "mstream/MV" forall v.
@@ -104,7 +92,7 @@ boxed = V
 
 newtype Id a = Id { runId :: a }
 
-cast2 :: (Typeable2 p, Typeable2 q) => p a b -> Maybe (q a b)
+cast2 :: (Typeable p, Typeable q) => p a b -> Maybe (q a b)
 cast2 x = runId <$> gcast2 (Id x)
 {-# INLINE cast2 #-}
 
@@ -155,7 +143,6 @@ instance GM.MVector MVector a where
 -- mixed vectors
 data Vector :: * -> * where
   V :: Mixed mv v a => !(v a) -> Vector a
- deriving Typeable
 
 {-# RULES
 "stream/V" forall v.

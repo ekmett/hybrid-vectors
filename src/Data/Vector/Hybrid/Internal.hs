@@ -1,16 +1,8 @@
-{-# LANGUAGE CPP, DeriveDataTypeable, FlexibleInstances, GADTs        #-}
+{-# LANGUAGE CPP, FlexibleInstances, GADTs        #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving, KindSignatures               #-}
 {-# LANGUAGE MultiParamTypeClasses, ScopedTypeVariables, TypeFamilies #-}
 {-# LANGUAGE TypeOperators                                            #-}
 {-# LANGUAGE UndecidableInstances                                     #-}
-
-#ifndef MIN_VERSION_base
-#define MIN_VERSION_base(x,y,z) 1
-#endif
-
-#ifndef MIN_VERSION_vector
-#define MIN_VERSION_vector(x,y,z) 1
-#endif
 
 module Data.Vector.Hybrid.Internal
   ( MVector(..)
@@ -21,15 +13,9 @@ import           Control.Monad
 import qualified Data.Foldable               as F
 import           Data.Monoid
 import           Data.Semigroup
+import Data.Vector.Fusion.Bundle as Stream
 import qualified Data.Vector.Generic         as G
 import qualified Data.Vector.Generic.Mutable as GM
-
-
-#if MIN_VERSION_vector(0,11,0)
-import Data.Vector.Fusion.Bundle as Stream
-#else
-import Data.Vector.Fusion.Stream as Stream
-#endif
 
 import Data.Data
 import Prelude   hiding (drop, init, length, map, null, read, replicate,
@@ -38,26 +24,6 @@ import Text.Read
 
 data MVector :: (* -> * -> *) -> (* -> * -> *) -> * -> * -> * where
   MV :: !(u s a) -> !(v s b) -> MVector u v s (a, b)
-
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
- deriving Typeable
-
-#define Typeable1 Typeable
-
-#else
-
--- custom Typeable
-instance (Typeable2 u, Typeable2 v) => Typeable2 (MVector u v) where
-  typeOf2 (_ :: MVector u v s ab) = mkTyConApp mvectorTyCon [typeOf2 (undefined :: u s a), typeOf2 (undefined :: v s b)]
-
-mvectorTyCon :: TyCon
-#if MIN_VERSION_base(4,4,0)
-mvectorTyCon = mkTyCon3 "hybrid-vectors" "Data.Vector.Hybrid.Internal" "MVector"
-#else
-mvectorTyCon = mkTyCon "Data.Vector.Hybrid.Internal.MVector"
-#endif
-
-#endif
 
 instance (GM.MVector u a, GM.MVector v b) => GM.MVector (MVector u v) (a, b) where
   basicLength (MV ks _) = GM.basicLength ks
@@ -94,31 +60,12 @@ instance (GM.MVector u a, GM.MVector v b) => GM.MVector (MVector u v) (a, b) whe
   {-# INLINE basicUnsafeMove #-}
   basicUnsafeGrow (MV ks vs) n = liftM2 MV (GM.basicUnsafeGrow ks n) (GM.basicUnsafeGrow vs n)
   {-# INLINE basicUnsafeGrow #-}
-#if MIN_VERSION_vector(0,11,0)
   basicInitialize (MV ks vs) = GM.basicInitialize ks >> GM.basicInitialize vs
   {-# INLINE basicInitialize #-}
-#endif
 
 -- hybrid vectors
 data Vector :: (* -> *) -> (* -> *) -> * -> * where
   V :: !(u a) -> !(v b) -> Vector u v (a, b)
-
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
- deriving Typeable
-#else
-
--- custom Typeable
-instance (Typeable1 u, Typeable1 v) => Typeable1 (Vector u v) where
-  typeOf1 (_ :: Vector u v ab) = mkTyConApp vectorTyCon [typeOf1 (undefined :: u a), typeOf1 (undefined :: v b)]
-
-vectorTyCon :: TyCon
-#if MIN_VERSION_base(4,4,0)
-vectorTyCon = mkTyCon3 "hybrid-vectors" "Data.Vector.Hybrid.Internal" "Vector"
-#else
-vectorTyCon = mkTyCon "Data.Vector.Hybrid.Internal.Vector"
-#endif
-
-#endif
 
 type instance G.Mutable (Vector u v) = MVector (G.Mutable u) (G.Mutable v)
 
@@ -161,7 +108,7 @@ instance (G.Vector u a, G.Vector v b, Read a, Read b, c ~ (a, b)) => Read (Vecto
   readPrec = G.readPrec
   readListPrec = readListPrecDefault
 
-instance (Data a, Data b, Typeable1 u, Typeable1 v, G.Vector u a, G.Vector v b, c ~ (a, b)) => Data (Vector u v c) where
+instance (Data a, Data b, Typeable u, Typeable v, G.Vector u a, G.Vector v b, c ~ (a, b)) => Data (Vector u v c) where
   gfoldl       = G.gfoldl
   toConstr _   = error "toConstr" -- TODO: virtual constructor
   gunfold _ _  = error "gunfold"  -- TODO: virtual constructor

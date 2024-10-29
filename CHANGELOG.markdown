@@ -1,3 +1,7 @@
+next [????.??.??]
+-----------------
+* Drop support for pre-8.0 versions of GHC.
+
 0.2.4 [2023.08.06]
 ------------------
 * Future-proof against `foldl'` being added to the `Prelude`.
