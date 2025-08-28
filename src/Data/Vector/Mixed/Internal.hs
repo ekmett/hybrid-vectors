@@ -214,10 +214,10 @@ instance NFData1 Vector where
 
 #if MIN_VERSION_base(4,9,0)
 instance Eq1 Vector where
-  liftEq eq xs ys = Stream.eqBy eq (G.stream xs) (G.stream ys)
+  liftEq e xs ys = Stream.eqBy e (G.stream xs) (G.stream ys)
 
 instance Ord1 Vector where
-  liftCompare cmp xs ys = Stream.cmpBy cmp (G.stream xs) (G.stream ys)
+  liftCompare c xs ys = Stream.cmpBy c (G.stream xs) (G.stream ys)
 #endif
 
 instance Semigroup (Vector a) where
