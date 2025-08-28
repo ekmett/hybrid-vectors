@@ -158,9 +158,10 @@ import qualified Data.Vector.Generic.Mutable as GM
 import qualified Data.Vector.Generic.New as New
 import Data.Vector.Mixed.Internal
 import Data.Vector.Internal.Check as Ck
-import qualified Data.Vector.Fusion.Stream as Stream
-import           Data.Vector.Fusion.Stream (MStream, Stream)
-import qualified Data.Vector.Fusion.Stream.Monadic as MStream
+import qualified Data.Vector.Fusion.Bundle as Stream
+import           qualified Data.Vector.Fusion.Stream.Monadic as S
+import           Data.Vector.Fusion.Bundle (MBundle, Bundle)
+import qualified Data.Vector.Fusion.Bundle.Monadic as MStream
 
 -- import Control.DeepSeq ( NFData, rnf )
 import Control.Monad ( liftM )
@@ -563,7 +564,7 @@ force m = mix (G.force m)
 m // xs = mix (m G.// xs)
 {-# INLINE (//) #-}
 
-update_stream :: G.Vector v a => v a -> Stream (Int,a) -> v a
+update_stream :: G.Vector v a => v a -> Bundle u (Int,a) -> v a
 update_stream = modifyWithStream GM.update
 {-# INLINE update_stream #-}
 
@@ -596,15 +597,19 @@ update_ ::
     -> v' Int -- ^ index vector (of length @n1@)
     -> v'' a   -- ^ value vector (of length @n2@)
     -> Vector a
-update_ v is w = mix (update_stream v (Stream.zipWith (,) (G.stream is) (G.stream w)))
+update_ v is w = mix (update_stream v (Stream.zipWith (,) (changeBundle (G.stream is)) (G.stream w)))
 {-# INLINE update_ #-}
+
+changeBundle :: Bundle u a -> Bundle v a
+changeBundle b = MStream.fromStream (MStream.elements b) (MStream.size b)
+{-# INLINE changeBundle #-}
 
 -- | Same as ('//') but without bounds checking.
 unsafeUpd :: Mixed u v a => v a -> [(Int, a)] -> Vector a
 unsafeUpd v us = mix (unsafeUpdate_stream v (Stream.fromList us))
 {-# INLINE unsafeUpd #-}
 
-unsafeUpdate_stream :: G.Vector v a => v a -> Stream (Int,a) -> v a
+unsafeUpdate_stream :: G.Vector v a => v a -> Bundle u (Int,a) -> v a
 unsafeUpdate_stream = modifyWithStream GM.unsafeUpdate
 {-# INLINE unsafeUpdate_stream #-}
 
@@ -616,7 +621,7 @@ unsafeUpdate v w = mix (unsafeUpdate_stream v (G.stream w))
 -- | Same as 'update_' but without bounds checking.
 unsafeUpdate_ :: ( Mixed u v a, G.Vector v' Int, G.Vector v'' a
   ) => v a -> v' Int -> v'' a -> Vector a
-unsafeUpdate_ v is w = mix (unsafeUpdate_stream v (Stream.zipWith (,) (G.stream is) (G.stream w)))
+unsafeUpdate_ v is w = mix (unsafeUpdate_stream v (Stream.zipWith (,) (changeBundle (G.stream is)) (G.stream w)))
 {-# INLINE unsafeUpdate_ #-}
 
 -- Accumulations
@@ -665,10 +670,10 @@ accumulate_
   -> v' Int    -- ^ index vector (of length @n1@)
   -> v'' b      -- ^ value vector (of length @n2@)
   -> Vector a
-accumulate_ f v is xs = mix (accum_stream f v (Stream.zipWith (,) (G.stream is) (G.stream xs)))
+accumulate_ f v is xs = mix (accum_stream f v (Stream.zipWith (,) (changeBundle (G.stream is)) (G.stream xs)))
 {-# INLINE accumulate_ #-}
 
-accum_stream :: G.Vector v a => (a -> b -> a) -> v a -> Stream (Int,b) -> v a
+accum_stream :: G.Vector v a => (a -> b -> a) -> v a -> Bundle u (Int,b) -> v a
 accum_stream f = modifyWithStream (GM.accum f)
 {-# INLINE accum_stream #-}
 
@@ -687,10 +692,10 @@ unsafeAccumulate f v us = mix (unsafeAccum_stream f v (G.stream us))
 unsafeAccumulate_
   :: (Mixed u v a, G.Vector v' Int, G.Vector v'' b)
   => (a -> b -> a) -> v a -> v' Int -> v'' b -> Vector a
-unsafeAccumulate_ f v is xs = mix (unsafeAccum_stream f v (Stream.zipWith (,) (G.stream is) (G.stream xs)))
+unsafeAccumulate_ f v is xs = mix (unsafeAccum_stream f v (Stream.zipWith (,) (changeBundle (G.stream is)) (G.stream xs)))
 {-# INLINE unsafeAccumulate_ #-}
 
-unsafeAccum_stream :: G.Vector v a => (a -> b -> a) -> v a -> Stream (Int,b) -> v a
+unsafeAccum_stream :: G.Vector v a => (a -> b -> a) -> v a -> Bundle u (Int,b) -> v a
 unsafeAccum_stream f = modifyWithStream (GM.unsafeAccum f)
 {-# INLINE unsafeAccum_stream #-}
 
@@ -719,6 +724,7 @@ backpermute v is = mix
                  $ seq v
                  $ seq n
                  $ G.unstream
+                 $ changeBundle
                  $ Stream.unbox
                  $ Stream.map index
                  $ G.stream is
@@ -738,6 +744,7 @@ unsafeBackpermute v is = mix
                        $ seq v
                        $ seq n
                        $ G.unstream
+                       $ changeBundle
                        $ Stream.unbox
                        $ Stream.map index
                        $ G.stream is
@@ -779,7 +786,7 @@ indexed m = mix (G.indexed m)
 
 -- | /O(n)/ Map a function over a vector
 map :: G.Vector v a => (a -> b) -> v a -> Vector b
-map f = boxed . G.unstream . Stream.inplace (MStream.map f) . G.stream
+map f = boxed . G.unstream . changeBundle . Stream.inplace (S.map f) id . G.stream
 
 
 {-# INLINE map #-}
@@ -787,7 +794,7 @@ map f = boxed . G.unstream . Stream.inplace (MStream.map f) . G.stream
 -- | /O(n)/ Apply a function to every element of a vector and its index
 imap :: G.Vector v a => (Int -> a -> b) -> v a -> Vector b
 -- imap f m = mix (G.imap f m)
-imap f = boxed . G.unstream . Stream.inplace (MStream.map (uncurry f) . MStream.indexed) . G.stream
+imap f = boxed . G.unstream . changeBundle . Stream.inplace (S.map (uncurry f) . S.indexed) id . G.stream
 {-# INLINE imap #-}
 
 -- | Map a function over a vector and concatenate the results.
@@ -828,28 +835,28 @@ forM_ as f = mapM_ f as
 -- | /O(min(m,n))/ Zip two vectors with the given function.
 zipWith :: (G.Vector va a, G.Vector vb b)
         => (a -> b -> c) -> va a -> vb b -> Vector c
-zipWith k a b = boxed (G.unstream (Stream.zipWith k (G.stream a) (G.stream b)))
+zipWith k a b = boxed (G.unstream (changeBundle (Stream.zipWith k (changeBundle (G.stream a)) (G.stream b))))
 {-# INLINE zipWith #-}
 
 -- | Zip three vectors with the given function.
 zipWith3 :: (G.Vector va a, G.Vector vb b, G.Vector vc c)
          => (a -> b -> c -> d) -> va a -> vb b -> vc c -> Vector d
-zipWith3 k a b c = boxed (G.unstream (Stream.zipWith3 k (G.stream a) (G.stream b) (G.stream c)))
+zipWith3 k a b c = boxed (G.unstream (changeBundle (Stream.zipWith3 k (changeBundle (G.stream a)) (changeBundle (G.stream b)) (G.stream c))))
 {-# INLINE zipWith3 #-}
 
 zipWith4 :: (G.Vector va a, G.Vector vb b, G.Vector vc c, G.Vector vd d)
          => (a -> b -> c -> d -> e) -> va a -> vb b -> vc c -> vd d -> Vector e
-zipWith4 k a b c d = boxed (G.unstream (Stream.zipWith4 k (G.stream a) (G.stream b) (G.stream c) (G.stream d)))
+zipWith4 k a b c d = boxed (G.unstream (changeBundle (Stream.zipWith4 k (changeBundle $ G.stream a) (changeBundle $ G.stream b) (changeBundle $ G.stream c) (G.stream d))))
 {-# INLINE zipWith4 #-}
 
 zipWith5 :: (G.Vector va a, G.Vector vb b, G.Vector vc c, G.Vector vd d, G.Vector ve e)
          => (a -> b -> c -> d -> e -> f) -> va a -> vb b -> vc c -> vd d -> ve e -> Vector f
-zipWith5 k a b c d e = boxed (G.unstream (Stream.zipWith5 k (G.stream a) (G.stream b) (G.stream c) (G.stream d) (G.stream e)))
+zipWith5 k a b c d e = boxed (G.unstream (changeBundle (Stream.zipWith5 k (changeBundle $ G.stream a) (changeBundle $ G.stream b) (changeBundle $ G.stream c) (changeBundle $ G.stream d) (G.stream e))))
 {-# INLINE zipWith5 #-}
 
 zipWith6 :: (G.Vector va a, G.Vector vb b, G.Vector vc c, G.Vector vd d, G.Vector ve e, G.Vector vf f)
          => (a -> b -> c -> d -> e -> f -> g) -> va a -> vb b -> vc c -> vd d -> ve e -> vf f -> Vector g
-zipWith6 k a b c d e f = boxed (G.unstream (Stream.zipWith6 k (G.stream a) (G.stream b) (G.stream c) (G.stream d) (G.stream e) (G.stream f)))
+zipWith6 k a b c d e f = boxed (G.unstream (changeBundle (Stream.zipWith6 k (changeBundle $ G.stream a) (changeBundle $ G.stream b) (changeBundle $ G.stream c) (changeBundle $ G.stream d) (changeBundle $ G.stream e) (G.stream f))))
 {-# INLINE zipWith6 #-}
 
 
@@ -858,32 +865,32 @@ zipWith6 k a b c d e f = boxed (G.unstream (Stream.zipWith6 k (G.stream a) (G.st
 
 izipWith :: (G.Vector va a, G.Vector vb b)
         => (Int -> a -> b -> c) -> va a -> vb b -> Vector c
-izipWith f xs ys = boxed $ G.unstream $
-   Stream.zipWith (uncurry f) (Stream.indexed (G.stream xs)) (G.stream ys)
+izipWith f xs ys = boxed $ G.unstream $ changeBundle $
+   Stream.zipWith (uncurry f) (Stream.indexed (changeBundle $ G.stream xs)) (G.stream ys)
 
 {-# INLINE izipWith #-}
 
 -- | Zip three vectors and their indices with the given function.
 izipWith3 :: (G.Vector va a, G.Vector vb b, G.Vector vc c)
          => (Int -> a -> b -> c -> d) -> va a -> vb b -> vc c -> Vector d
-izipWith3 f xs ys zs = boxed $ G.unstream $
-   Stream.zipWith3 (uncurry f) (Stream.indexed (G.stream xs)) (G.stream ys) (G.stream zs)
+izipWith3 f xs ys zs = boxed $ G.unstream $ changeBundle $
+   Stream.zipWith3 (uncurry f) (Stream.indexed (changeBundle $ G.stream xs)) (changeBundle $ G.stream ys) (G.stream zs)
 {-# INLINE izipWith3 #-}
 
 izipWith4 :: (G.Vector va a, G.Vector vb b, G.Vector vc c, G.Vector vd d)
          => (Int -> a -> b -> c -> d -> e) -> va a -> vb b -> vc c -> vd d -> Vector e
-izipWith4 f xs ys zs ws = boxed $ G.unstream $
-   Stream.zipWith4 (uncurry f) (Stream.indexed (G.stream xs)) (G.stream ys) (G.stream zs) (G.stream ws)
+izipWith4 f xs ys zs ws = boxed $ G.unstream $ changeBundle $
+   Stream.zipWith4 (uncurry f) (Stream.indexed (changeBundle $ G.stream xs)) (changeBundle $ G.stream ys) (changeBundle $ G.stream zs) (G.stream ws)
 {-# INLINE izipWith4 #-}
 
 izipWith5 :: (G.Vector va a, G.Vector vb b, G.Vector vc c, G.Vector vd d, G.Vector ve e)
          => (Int -> a -> b -> c -> d -> e -> f) -> va a -> vb b -> vc c -> vd d -> ve e -> Vector f
-izipWith5 k a b c d e = boxed (G.unstream (Stream.zipWith5 (uncurry k) (Stream.indexed (G.stream a)) (G.stream b) (G.stream c) (G.stream d) (G.stream e)))
+izipWith5 k a b c d e = boxed (G.unstream (changeBundle (Stream.zipWith5 (uncurry k) (Stream.indexed (changeBundle $ G.stream a)) (changeBundle $ G.stream b) (changeBundle $ G.stream c) (changeBundle $ G.stream d) (G.stream e))))
 {-# INLINE izipWith5 #-}
 
 izipWith6 :: (G.Vector va a, G.Vector vb b, G.Vector vc c, G.Vector vd d, G.Vector ve e, G.Vector vf f)
          => (Int -> a -> b -> c -> d -> e -> f -> g) -> va a -> vb b -> vc c -> vd d -> ve e -> vf f -> Vector g
-izipWith6 k a b c d e f = boxed (G.unstream (Stream.zipWith6 (uncurry k) (Stream.indexed (G.stream a)) (G.stream b) (G.stream c) (G.stream d) (G.stream e) (G.stream f)))
+izipWith6 k a b c d e f = boxed (G.unstream (changeBundle (Stream.zipWith6 (uncurry k) (Stream.indexed (changeBundle $ G.stream a)) (changeBundle $ G.stream b) (changeBundle $ G.stream c) (changeBundle $ G.stream d) (changeBundle $ G.stream e) (G.stream f))))
 {-# INLINE izipWith6 #-}
 
 -- | Elementwise pairing of array elements.
@@ -958,14 +965,14 @@ unzip6 xs = (map (\(a, _, _, _, _, _) -> a) xs,
 -- | /O(min(m,n))/ Zip the two vectors with the monadic action and yield a
 -- vector of results
 zipWithM :: (Monad m, G.Vector va a, G.Vector vb b) => (a -> b -> m c) -> va a -> vb b -> m (Vector c)
-zipWithM f as bs = unstreamM $ Stream.zipWithM f (G.stream as) (G.stream bs)
+zipWithM f as bs = unstreamM $ Stream.zipWithM f (changeBundle $ G.stream as) (G.stream bs)
 {-# INLINE zipWithM #-}
 
 
 -- | /O(min(m,n))/ Zip the two vectors with the monadic action and ignore the
 -- results
 zipWithM_ :: (Monad m, G.Vector va a, G.Vector vb b) => (a -> b -> m c) -> va a -> vb b -> m ()
-zipWithM_ f as bs = Stream.zipWithM_ f (G.stream as) (G.stream bs)
+zipWithM_ f as bs = Stream.zipWithM_ f (changeBundle $ G.stream as) (G.stream bs)
 {-# INLINE zipWithM_ #-}
 
 -- Filtering
@@ -1064,8 +1071,8 @@ findIndex = G.findIndex
 -- | /O(n)/ Yield the indices of elements satisfying the predicate in ascending
 -- order.
 findIndices :: G.Vector v a => (a -> Bool) -> v a -> Vector Int
-findIndices f = unboxed . G.unstream
-              . Stream.inplace (MStream.map fst . MStream.filter (f . snd) . MStream.indexed)
+findIndices f = unboxed . G.unstream . changeBundle
+              . Stream.inplace (S.map fst . S.filter (f . snd) . S.indexed) id
               . G.stream
 {-# INLINE findIndices #-}
 
@@ -1297,12 +1304,12 @@ sequence_ = mapM_ id
 -- Example: @prescanl (+) 0 \<1,2,3,4\> = \<0,1,3,6\>@
 --
 prescanl :: G.Vector v b => (a -> b -> a) -> a -> v b -> Vector a
-prescanl f z = boxed . G.unstream . Stream.inplace (MStream.prescanl f z) . G.stream
+prescanl f z = boxed . G.unstream . changeBundle . Stream.inplace (S.prescanl f z) id . G.stream
 {-# INLINE prescanl #-}
 
 -- | /O(n)/ Prescan with strict accumulator
 prescanl' :: G.Vector v b => (a -> b -> a) -> a -> v b -> Vector a
-prescanl' f z = boxed . G.unstream . Stream.inplace (MStream.prescanl' f z) . G.stream
+prescanl' f z = boxed . G.unstream . changeBundle . Stream.inplace (S.prescanl' f z) id . G.stream
 {-# INLINE prescanl' #-}
 
 -- | /O(n)/ Scan
@@ -1314,12 +1321,12 @@ prescanl' f z = boxed . G.unstream . Stream.inplace (MStream.prescanl' f z) . G.
 -- Example: @postscanl (+) 0 \<1,2,3,4\> = \<1,3,6,10\>@
 --
 postscanl :: G.Vector v b => (a -> b -> a) -> a -> v b -> Vector a
-postscanl f z = boxed . G.unstream . Stream.inplace (MStream.postscanl f z) . G.stream
+postscanl f z = boxed . G.unstream . changeBundle . Stream.inplace (S.postscanl f z) id . G.stream
 {-# INLINE postscanl #-}
 
 -- | /O(n)/ Scan with strict accumulator
 postscanl' :: G.Vector v b => (a -> b -> a) -> a -> v b -> Vector a
-postscanl' f z = boxed . G.unstream . Stream.inplace (MStream.postscanl' f z) . G.stream
+postscanl' f z = boxed . G.unstream . changeBundle . Stream.inplace (S.postscanl' f z) id . G.stream
 {-# INLINE postscanl' #-}
 
 
@@ -1333,12 +1340,12 @@ postscanl' f z = boxed . G.unstream . Stream.inplace (MStream.postscanl' f z) . 
 --
 
 scanl :: G.Vector v b => (a -> b -> a) -> a -> v b -> Vector a
-scanl f z = boxed . G.unstream . Stream.scanl f z . G.stream
+scanl f z = boxed . G.unstream . changeBundle . Stream.scanl f z . G.stream
 {-# INLINE scanl #-}
 
 -- | /O(n)/ Haskell-style scan with strict accumulator
 scanl' :: G.Vector v b => (a -> b -> a) -> a -> v b -> Vector a
-scanl' f z = boxed . G.unstream . Stream.scanl' f z . G.stream
+scanl' f z = boxed . G.unstream . changeBundle . Stream.scanl' f z . G.stream
 {-# INLINE scanl' #-}
 
 -- | /O(n)/ Scan over a non-empty vector
@@ -1363,22 +1370,22 @@ scanl1' f = mix . G.scanl1' f
 -- @
 --
 prescanr :: G.Vector v a => (a -> b -> b) -> b -> v a -> Vector b
-prescanr f z = boxed . G.unstreamR . Stream.inplace (MStream.prescanl (flip f) z) . G.streamR
+prescanr f z = boxed . G.unstreamR . changeBundle . Stream.inplace (S.prescanl (flip f) z) id . G.streamR
 {-# INLINE prescanr #-}
 
 -- | /O(n)/ Right-to-left prescan with strict accumulator
 prescanr' :: G.Vector v a => (a -> b -> b) -> b -> v a -> Vector b
 {-# INLINE prescanr' #-}
-prescanr' f z = boxed . G.unstreamR . Stream.inplace (MStream.prescanl' (flip f) z) . G.streamR
+prescanr' f z = boxed . G.unstreamR . changeBundle . Stream.inplace (S.prescanl' (flip f) z) id . G.streamR
 
 -- | /O(n)/ Right-to-left scan
 postscanr :: G.Vector v a => (a -> b -> b) -> b -> v a -> Vector b
-postscanr f z = boxed . G.unstreamR . Stream.inplace (MStream.postscanl (flip f) z) . G.streamR
+postscanr f z = boxed . G.unstreamR . changeBundle . Stream.inplace (S.postscanl (flip f) z) id . G.streamR
 {-# INLINE postscanr #-}
 
 -- | /O(n)/ Right-to-left scan with strict accumulator
 postscanr' :: G.Vector v a => (a -> b -> b) -> b -> v a -> Vector b
-postscanr' f z = boxed . G.unstreamR . Stream.inplace (MStream.postscanl' (flip f) z) . G.streamR
+postscanr' f z = boxed . G.unstreamR . changeBundle . Stream.inplace (S.postscanl' (flip f) z) id . G.streamR
 {-# INLINE postscanr' #-}
 
 -- | /O(n)/ Right-to-left Haskell-style scan
@@ -1466,7 +1473,7 @@ copy dst src = G.copy (mmix dst) (mix src)
 -- Utilities
 -- ---------
 
-unstreamM :: (Monad m, G.Vector v a) => MStream m a -> m (v a)
+unstreamM :: (Monad m, G.Vector v a) => MBundle m u a -> m (v a)
 unstreamM s = do
   xs <- MStream.toList s
   return $ G.unstream $ Stream.unsafeFromList (MStream.size s) xs
@@ -1475,7 +1482,7 @@ unstreamM s = do
 -- We have to make sure that this is strict in the stream but we can't seq on
 -- it while fusion is happening. Hence this ugliness.
 modifyWithStream :: G.Vector v a
-                 => (forall s. G.Mutable v s a -> Stream b -> ST s ())
-                 -> v a -> Stream b -> v a
+                 => (forall s. G.Mutable v s a -> Bundle u b -> ST s ())
+                 -> v a -> Bundle u b -> v a
 {-# INLINE modifyWithStream #-}
-modifyWithStream p v s = G.new (New.modifyWithStream p (G.clone v) s)
+modifyWithStream p v s = G.new (New.modifyWithBundle p (G.clone v) s)
