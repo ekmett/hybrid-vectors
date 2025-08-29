@@ -47,6 +47,9 @@ library
     Data.Vector.Hybrid
     Data.Vector.Hybrid.Internal
     Data.Vector.Hybrid.Mutable
+    Data.Vector.Mixed
+    Data.Vector.Mixed.Internal
+    Data.Vector.Mixed.Mutable
 
   ghc-options: -Wall -O2
   default-language: Haskell2010

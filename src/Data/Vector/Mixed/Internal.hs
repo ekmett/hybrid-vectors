@@ -21,8 +21,9 @@ module Data.Vector.Mixed.Internal
 
 import Control.Applicative
 import Control.Monad
+import Data.Foldable as F
 import Data.Monoid
-import Data.Foldable
+import Data.Semigroup
 import Data.Traversable
 import qualified Data.Vector.Generic.Mutable as GM
 import qualified Data.Vector.Generic as G
@@ -32,10 +33,26 @@ import qualified Data.Vector.Storable as S
 import qualified Data.Vector.Primitive as P
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Hybrid as H
-import Data.Vector.Fusion.Stream as Stream
+import Data.Vector.Fusion.Bundle as Stream
+import Data.Vector.Fusion.Bundle.Monadic as MStream
+import Data.Vector.Fusion.Bundle.Size as Size
 import Data.Data
 import Prelude hiding ( length, null, replicate, reverse, map, read, take, drop, init, tail )
 import Text.Read
+
+import Control.DeepSeq ( NFData(rnf)
+#if MIN_VERSION_deepseq(1,4,3)
+                       , NFData1(liftRnf)
+#endif
+                       )
+
+#if __GLASGOW_HASKELL__ >= 708
+import qualified GHC.Exts as Exts (IsList(..))
+#endif
+
+#if MIN_VERSION_base(4,9,0)
+import Data.Functor.Classes (Eq1 (..), Ord1 (..), Read1 (..), Show1 (..))
+#endif
 
 -- | Vector doesn't provide a way to recover the type of the immutable vector from the mutable vector type
 --
@@ -133,12 +150,15 @@ instance GM.MVector MVector a where
   basicUnsafeMove (MV dst) (MV src) = case cast2 dst of
     Just dst' -> GM.basicUnsafeMove dst' src
     Nothing   -> do
-      srcCopy <- GM.munstream (GM.mstream src)
+      let n = GM.length src
+      srcCopy <- n `seq` GM.munstream (MStream.fromStream (GM.mstream src) (Size.Exact n))
       GM.basicUnsafeCopy dst srcCopy
   {-# INLINE basicUnsafeMove #-}
 
   basicUnsafeGrow (MV ks) n = liftM MV (GM.basicUnsafeGrow ks n)
   {-# INLINE basicUnsafeGrow #-}
+  basicInitialize (MV ks) = GM.basicInitialize ks
+  {-# INLINE basicInitialize #-}
 
 -- mixed vectors
 data Vector :: * -> * where
@@ -179,9 +199,36 @@ instance G.Vector Vector a where
   elemseq (V ks) k b = G.elemseq ks k b
   {-# INLINE elemseq #-}
 
+liftRnfV :: (a -> ()) -> Vector a -> ()
+liftRnfV elemRnf = G.foldl' (\_ -> elemRnf) ()
+
+instance NFData a => NFData (Vector a) where
+  rnf = liftRnfV rnf
+  {-# INLINEABLE rnf #-}
+
+#if MIN_VERSION_deepseq(1,4,3)
+instance NFData1 Vector where
+  liftRnf = liftRnfV
+  {-# INLINEABLE liftRnf #-}
+#endif
+
+#if MIN_VERSION_base(4,9,0)
+instance Eq1 Vector where
+  liftEq e xs ys = Stream.eqBy e (G.stream xs) (G.stream ys)
+
+instance Ord1 Vector where
+  liftCompare c xs ys = Stream.cmpBy c (G.stream xs) (G.stream ys)
+#endif
+
+instance Semigroup (Vector a) where
+  (<>) = (G.++)
+  sconcat = mconcat . F.toList
+
 instance Monoid (Vector a) where
+#if !(MIN_VERSION_base(4,11,0))
   mappend = (G.++)
   {-# INLINE mappend #-}
+#endif
   mempty = G.empty
   {-# INLINE mempty #-}
   mconcat = G.concat
@@ -193,6 +240,23 @@ instance Show a => Show (Vector a) where
 instance Read a => Read (Vector a) where
   readPrec = G.readPrec
   readListPrec = readListPrecDefault
+
+#if MIN_VERSION_base(4,9,0)
+instance Show1 Vector where
+    liftShowsPrec = G.liftShowsPrec
+
+instance Read1 Vector where
+    liftReadsPrec = G.liftReadsPrec
+#endif
+
+#if __GLASGOW_HASKELL__ >= 708
+
+instance Exts.IsList (Vector a) where
+  type Item (Vector a) = a
+  fromList = G.fromList
+  fromListN = G.fromListN
+  toList = G.toList
+#endif
 
 instance Data a => Data (Vector a) where
   gfoldl       = G.gfoldl
@@ -230,12 +294,22 @@ instance Functor Vector where
   fmap = G.map
   {-# INLINE fmap #-}
 
+#if MIN_VERSION_base(4,8,0)
+  {-# INLINE (<$) #-}
+  (<$) = G.map . const
+#endif
+
 instance Monad Vector where
   return = G.singleton
   {-# INLINE return #-}
 
   (>>=) = flip G.concatMap
   {-# INLINE (>>=) #-}
+
+#if !(MIN_VERSION_base(4,13,0))
+  {-# INLINE fail #-}
+  fail = Fail.fail -- == \ _str -> empty
+#endif
 
 instance MonadPlus Vector where
   {-# INLINE mzero #-}
@@ -270,6 +344,40 @@ instance Foldable Vector where
 
   foldl1 = G.foldl1
   {-# INLINE foldl1 #-}
+
+#if MIN_VERSION_base(4,6,0)
+  {-# INLINE foldr' #-}
+  foldr' = G.foldr'
+
+  {-# INLINE foldl' #-}
+  foldl' = G.foldl'
+#endif
+
+#if MIN_VERSION_base(4,8,0)
+  {-# INLINE toList #-}
+  toList = G.toList
+
+  {-# INLINE length #-}
+  length = G.length
+
+  {-# INLINE null #-}
+  null = G.null
+
+  {-# INLINE elem #-}
+  elem = G.elem
+
+  {-# INLINE maximum #-}
+  maximum = G.maximum
+
+  {-# INLINE minimum #-}
+  minimum = G.minimum
+
+  {-# INLINE sum #-}
+  sum = G.sum
+
+  {-# INLINE product #-}
+  product = G.product
+#endif
 
 instance Traversable Vector where
   traverse f v = G.fromListN (G.length v) <$> traverse f (G.toList v)
