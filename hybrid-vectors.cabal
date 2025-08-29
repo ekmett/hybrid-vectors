@@ -38,10 +38,8 @@ source-repository head
 library
   build-depends:
     base          >= 4.9     && < 5,
-    deepseq       >= 1.1     && < 1.6,
     primitive     >= 0.5     && < 0.10,
-    vector        >= 0.11    && < 0.14,
-    semigroups    >= 0.9     && < 1
+    vector        >= 0.11    && < 0.14
 
   hs-source-dirs: src
 
